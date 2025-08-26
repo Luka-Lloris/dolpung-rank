@@ -120,3 +120,74 @@ button.ghost{background:transparent}
     grid-template-rows:auto;
   }
 }
+
+/* ===== Modal (dark) ===== */
+.modal {
+  border: none;
+  padding: 0;
+  width: min(720px, 92vw);
+  border-radius: 16px;
+  background: #0f1117;
+  color: #e8eef9;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+
+.modal::backdrop {
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(2px);
+}
+
+.modal-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 16px;
+}
+
+.modal-card h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  letter-spacing: .2px;
+}
+
+.modal-card label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.modal-card input, .modal-card select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #2a2f3a;
+  background: #11141b;
+  color: #e8eef9;
+}
+
+.modal-card .hint {
+  margin: 4px 0 0;
+  color: #b8c4d9;
+  font-size: 13px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.modal-actions .ghost {
+  background: transparent;
+  border: 1px solid #333a47;
+  color: #e8eef9;
+}
+
+.modal-actions button {
+  border: 1px solid #2a2f3a;
+  background: #1a2030;
+  color: #e8eef9;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.modal-actions button:hover { border-color: #5bd5ff; }
