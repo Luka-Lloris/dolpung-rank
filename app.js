@@ -19,14 +19,54 @@ $formAuth.addEventListener('submit', async (e)=>{
   await afterLogin();
 });
 
+// 회원가입: 모달 열기
 $btnSignup.addEventListener('click', async ()=>{
-  const email = $email.value.trim(), password = $pass.value;
-  if (!email || !password) return alert('이메일/비밀번호 입력');
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) return alert('가입 실패: ' + error.message);
-  await afterLogin(true);
-  alert('가입 완료!');
+  await loadClassOptionsForSignup();
+  document.getElementById('dlg-signup').showModal();
 });
+
+// 가입 제출
+document.getElementById('su-submit').addEventListener('click', async ()=>{
+  const em  = document.getElementById('su-email').value.trim();
+  const pw1 = document.getElementById('su-pass').value;
+  const pw2 = document.getElementById('su-pass2').value;
+  const nick= document.getElementById('su-nick').value.trim();
+  const cls = document.getElementById('su-class').value || null;
+
+  if (!em || !pw1 || !pw2 || !nick) return alert('모든 필드를 채워주세요.');
+  if (pw1 !== pw2) return alert('비밀번호 확인이 일치하지 않습니다.');
+
+  // 1) Auth 가입
+  const { data:su, error:errSign } = await sb.auth.signUp({ email:em, password:pw1 });
+  if (errSign) return alert('가입 실패: '+errSign.message);
+
+  // 2) 프로필 보장 후 닉/클래스 저장 (본인만 업데이트 허용 RLS)
+  await sb.rpc('ensure_profile').catch(()=>{});
+  const { data:{ user } } = await sb.auth.getUser();
+  if (user){
+    await sb.from('profiles').update({ nickname:nick, class_code:cls })
+      .eq('user_id', user.id).select().single().catch(()=>{});
+  }
+
+  // 3) 안내 후 닫기
+  document.getElementById('dlg-signup').close();
+  alert('가입 신청 완료! 운영진 승인 대기 중입니다.');
+  await afterLogin(); // 로그인 상태면 화면 갱신
+});
+
+// 클래스 목록 로딩
+async function loadClassOptionsForSignup(){
+  const sel = document.getElementById('su-class');
+  sel.innerHTML = '<option value="">(선택)</option>';
+  const { data } = await sb.from('class_codes')
+    .select('code,label').eq('is_active', true).order('label', { ascending:true });
+  (data||[]).forEach(r=>{
+    const o = document.createElement('option');
+    o.value = r.code; o.textContent = r.label;
+    sel.appendChild(o);
+  });
+}
+
 
 // Kakao: 준비중 (리다이렉트 막음)
 $btnKakao.addEventListener('click', (e)=>{
