@@ -255,4 +255,36 @@ async function loadTop5(){
 
 function renderTop5(rows){
   $board.innerHTML = '';
-  co
+
+  // 항상 5칸 구성, 부족하면 placeholder
+  const items = Array.from({length:5}, (_,i)=> rows[i] ?? { nickname:'', class_label:null });
+
+  // 왼쪽/오른쪽 컨테이너
+  const left  = document.createElement('div');
+  left.className = 'hof-left';
+  const right = document.createElement('div');
+  right.className = 'hof-right';
+
+  items.forEach((r,i)=>{
+    const card = document.createElement('div');
+    card.className = 'hof-card';
+    const imgSrc = classImgPath(r.class_label);
+
+    card.innerHTML = `
+      <div class="place">${placeText(i+1)}</div>
+      <img alt="${r.class_label || 'placeholder'}">
+      <div class="name">${r.nickname || '&nbsp;'}</div>
+    `;
+
+    const img = card.querySelector('img');
+    img.src = imgSrc;
+    img.onerror = ()=>{ img.src = classImgPath(null); };
+
+    if (i === 0) left.appendChild(card);         // 1등 → 왼쪽
+    else right.appendChild(card);               // 2~5등 → 오른쪽 2×2
+  });
+
+  $board.appendChild(left);
+  $board.appendChild(right);
+}
+
