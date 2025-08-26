@@ -3,11 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-  <title>The Wind | Guild System</title>
+  <title>The Wind — 길드관리</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
+  <!-- 카카오 안내줄 -->
+  <div class="kakao-banner">
+    Kakao 로그인 기능은 준비 중에 있습니다
+  </div>
+
   <!-- 헤더 -->
   <header class="page-header">
     <div class="brand">
@@ -39,7 +44,6 @@
   <!-- 본문 -->
   <main class="stage">
     <section class="parchment">
-      <img class="parchment-bg" src="assets/bg.png" alt="" />
       <div class="parchment-inset">
         <!-- 좌측: 내 전투력 -->
         <div class="card left">
@@ -143,10 +147,10 @@
     </div>
   </dialog>
 
-  <!-- Supabase 환경값: 프로젝트 키로 교체 -->
+  <!-- Supabase 환경값: 여기 두 값만 네 프로젝트 값으로 바꾸면 됨 -->
   <script>
-    window.__SB_URL__  = "https://YOUR-PROJECT.supabase.co";
-    window.__SB_ANON__ = "YOUR-ANON-KEY";
+    window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
+    window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
   </script>
   <script src="app.js"></script>
 </body>
