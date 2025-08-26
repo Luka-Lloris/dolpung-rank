@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>관리자 메뉴</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="admin-page">
+  <header class="page-header">
+    <div class="brand"><h1>관리자 메뉴</h1></div>
+    <nav><a href="./">← 랭킹으로</a></nav>
+  </header>
+
+  <main class="admin-wrap">
+    <section class="admin-card">
+      <h2>가입 승인 대기</h2>
+      <div id="pending-list" class="table"></div>
+    </section>
+
+    <section class="admin-card">
+      <h2>열정 등급 설정 (현재 시즌)</h2>
+      <div class="row">
+        <input id="search-nick" placeholder="닉네임 일부" />
+        <button id="btn-search">검색</button>
+      </div>
+      <div id="search-result" class="table"></div>
+    </section>
+  </main>
+
+  <script>
+    window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
+    window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
+  </script>
+  <script src="admin.js"></script>
+</body>
+</html>
