@@ -1,150 +1,95 @@
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif;
-  color: #f2e8c9;
-  background: #000;
+/* Reset & base */
+*{box-sizing:border-box}
+:root{ --inset-x:150px }
+html,body{height:100%}
+body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif}
+
+/* Buttons & pills */
+.btn{height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
+.btn:hover{background:rgba(255,255,255,.16)}
+.btn.primary{background:#3ea76a;border-color:#3ea76a}
+.btn.primary:hover{background:#2f8a55}
+.btn.danger{background:#a63e3e;border-color:#a63e3e}
+.btn.danger:hover{background:#8a2f2f}
+.btn.ghost{background:transparent}
+.pill{background:rgba(255,255,255,.08);padding:6px 10px;border-radius:999px}
+
+/* Header */
+.page-header{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #222;background:#000;position:sticky;top:0;z-index:50}
+.brand{display:flex;gap:10px;align-items:center}
+.mascot{width:56px;height:auto;transform:translateY(6px)}
+.titles h1{margin:0;font-size:28px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
+.titles p{margin:2px 0 0;color:#ddd}
+.auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.auth-inline{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.auth-inline input{height:36px;padding:0 10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;min-width:210px}
+
+/* Stage (scroll parchment) */
+.stage{min-height:100%;padding:24px var(--inset-x) 80px;display:block;background:radial-gradient(1200px 600px at 50% -150px, rgba(255,255,255,.06), transparent)}
+.parchment{position:relative}
+.parchment-bg{position:absolute;inset:-50px 0 0 0;width:100%;height:100%;object-fit:cover;opacity:.8;pointer-events:none}
+.parchment-inset{position:relative;display:grid;grid-template-columns:1.1fr 1fr;gap:30px}
+
+/* Cards */
+.card{border-radius:16px;background:rgba(0,0,0,.35);padding:18px 18px 16px;backdrop-filter:blur(2px)}
+.card h2{margin:0 0 10px;color:#f4de62;letter-spacing:1px}
+
+/* Left panel: video / my stats */
+.guest-video{display:flex;align-items:center;justify-content:center}
+.guest-video video{width:450px;height:300px;object-fit:cover;border-radius:12px;overflow:hidden}
+
+.me-panel .my-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px}
+.me-panel .stat{background:rgba(0,0,0,.35);border-radius:10px;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
+.me-panel .label{opacity:.9}
+.me-panel .value{font-weight:700}
+
+.small{font-size:12px}
+.dim{opacity:.85}
+
+/* Inputs grid: 12-split -> 3 columns equal width */
+.grid.stats-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:30px;margin-top:8px}
+.grid.stats-grid > label{grid-column:span 4;display:grid;gap:6px}
+.grid.stats-grid input{height:40px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;padding:0 12px}
+
+/* Attendance line */
+.attendance{white-space:pre-line;font-size:18px;margin-top:6px}
+
+/* Actions */
+.actions{display:flex;align-items:center;gap:8px;margin-top:10px}
+
+/* Right panel: Hall of Fame */
+.hall-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.chip{height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff}
+.chip.on{background:rgba(255,255,255,.18)}
+
+/* HOF layout: LEFT 1st column + RIGHT 2x2 grid */
+.hof{display:grid;gap:30px;grid-template-columns:1.2fr 1fr 1fr;grid-template-rows:auto auto;grid-template-areas:
+  "first second third"
+  "first fourth fifth";
 }
+.hof-card{background:#0f0f10;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:180px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.hof-card img{width:100%;height:100%;object-fit:contain}
+.hof-card .name{width:100%;text-align:center;padding:8px 10px;background:rgba(255,255,255,.04)}
+.hof .first{grid-area:first;min-height:360px}
+.hof .second{grid-area:second}
+.hof .third{grid-area:third}
+.hof .fourth{grid-area:fourth}
+.hof .fifth{grid-area:fifth}
 
-/* 배경 두루마리 느낌은 기존 bg.png 활용 */
-.page {
-  min-height: 100%;
-  background: #000 url("assets/bg.png") center top / cover no-repeat fixed;
+/* Modal (dialog) */
+.modal{border:0;padding:0;border-radius:14px;max-width:min(560px,96vw);background:#0a0f17;color:#eee}
+.modal::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(1px)}
+.modal-card{padding:16px 16px 14px;display:grid;gap:10px}
+.modal-card h3{margin:0 0 8px}
+.modal-card label{display:grid;gap:6px;font-size:14px}
+.modal-card input,.modal-card select{height:38px;padding:0 12px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+
+/* Responsive */
+@media (max-width: 980px){
+  :root{ --inset-x: 18px }
+  .parchment-inset{grid-template-columns:1fr;gap:20px}
+  .hof{grid-template-areas:"first" "second" "third" "fourth" "fifth";grid-template-columns:1fr;grid-template-rows:auto}
+  .mascot{width:48px}
+  .titles h1{font-size:22px}
 }
-
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 24px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(3px);
-}
-
-.brand { display: flex; align-items: center; gap: 12px; }
-.logo { width: 28px; height: 28px; }
-.title h1 { margin: 0; font-size: 20px; }
-.title p { margin: 0; font-size: 12px; opacity: .8; }
-
-.authbox { display: flex; align-items: center; gap: 8px; }
-.auth-row { display: flex; align-items: center; gap: 8px; }
-.auth-row input {
-  height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15);
-  background: rgba(0,0,0,.45); color: #fff; min-width: 210px;
-}
-.pill { background: rgba(255,255,255,.08); padding: 6px 10px; border-radius: 999px; }
-
-.btn {
-  height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.08); color: #fff; cursor: pointer;
-}
-.btn:hover{ background: rgba(255,255,255,.16); }
-.btn.ghost{ background: transparent; }
-.btn.primary{ background: #3ea76a; border-color: #3ea76a; }
-.btn.primary:hover{ background: #2f8a55; }
-.btn.danger{ background: #a63e3e; border-color: #a63e3e; }
-.btn.danger:hover{ background: #8a2f2f; }
-
-.container { padding: 32px 150px 80px; }
-
-/* 좌우 150 인셋 + 2열 보드 */
-.board {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 30px;          /* 요구사항: 컴포넌트 사이 마진 30 */
-}
-
-/* 카드 공통 */
-.stats-card, .hof-card {
-  border-radius: 16px;
-  background: rgba(0,0,0,.35);
-  padding: 20px;
-  backdrop-filter: blur(2px);
-}
-
-/* ─ 로그인 전 영상: 찌그러짐 방지 + 고정 크기 450x300 */
-.video-box { width: 450px; height: 300px; border-radius: 12px; overflow: hidden; }
-.video-box video { width: 100%; height: 100%; object-fit: cover; }
-
-/* ─ 스탯 상단 정보 */
-.stat-header {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 8px;
-}
-.stat-header .cell {
-  background: rgba(0,0,0,.35); border-radius: 10px; padding: 10px 12px; height: 52px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.stat-hint { margin: 2px 0 16px; font-size: 12px; opacity: .85; }
-.stat-hint b { margin-right: 8px; }
-
-/* ─ 입력 그리드: 12분할로 동일폭 */
-.stats-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 30px; }
-.stats-item { grid-column: span 4; }  /* 3열 */
-.stats-item label { display: block; font-size: 13px; margin-bottom: 6px; opacity: .9; }
-.stats-item input {
-  width: 100%; height: 40px; border-radius: 10px; border: none; padding: 0 12px;
-  background: rgba(0,0,0,.35); color: #fff;
-}
-
-.actions { margin-top: 14px; display: flex; align-items: center; gap: 10px; }
-.save-msg { font-size: 13px; opacity: .9; }
-
-/* ─ 출석 문구(폰트 + 줄바꿈) */
-.attendance-text { margin-top: 8px; font-size: 18px; line-height: 1.6; white-space: pre-line; }
-
-/* ─ 명예의 전당 */
-.hof-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.tabs { display: flex; gap: 8px; }
-.chip {
-  height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.15);
-  background: rgba(255,255,255,.08); color: #fff;
-}
-.chip.on { background: rgba(255,255,255,.18); }
-
-.hof {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  grid-template-rows: 320px 320px;
-  gap: 30px;           /* 요구사항 동일 */
-}
-.hof .card, .hof .card.big {
-  border-radius: 16px; overflow: hidden; background: #111;
-  display:flex; align-items:center; justify-content:center;
-}
-.hof .card.big { grid-row: 1 / span 2; }
-.hof .card img { width: 100%; height: 100%; object-fit: contain; }
-
-.footer { height: 30px; }
-
-
-
-
-/* === The Wind: 최초가입 모달 (네임스페이스) === */
-.tw-modal-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,.6);
-  display: flex; align-items: center; justify-content: center;
-}
-.tw-modal {
-  width: 440px; max-width: calc(100% - 40px);
-  background: rgba(20,20,20,.92);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 14px; overflow: hidden; color: #f2e8c9;
-  box-shadow: 0 10px 30px rgba(0,0,0,.5);
-}
-.tw-modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.08);
-}
-.tw-modal-close {
-  background: transparent; color: #fff; border: none; font-size: 22px; line-height: 1; cursor: pointer;
-}
-.tw-modal-body { padding: 16px; }
-.tw-field { display: grid; gap: 6px; margin-bottom: 12px; }
-.tw-field input, .tw-field select {
-  height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15);
-  background: rgba(0,0,0,.45); color: #fff; padding: 0 10px;
-}
-.tw-modal-footer { display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.08); }
-.tw-help { font-size: 12px; opacity: .85; margin: 6px 0 0; }
-.tw-msg { margin-top: 8px; font-size: 13px; }
