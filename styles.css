@@ -1,13 +1,21 @@
-/* 기본 */
+/* =============== 기본 =============== */
 *{box-sizing:border-box}
-body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+:root{
+  --bg:#000; --fg:#eee;
+  --panel:rgba(0,0,0,.22);
+  --border:rgba(255,255,255,.08);
+  --shadow:0 12px 40px rgba(0,0,0,.45);
+  --accent:#d6f58f;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 img{max-width:100%;height:auto;display:block}
 
-/* 헤더 */
-.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000}
+/* =============== 헤더 =============== */
+.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000;gap:12px}
 .brand{display:flex;gap:10px;align-items:center}
 .mascot{width:72px;height:auto;transform:translateY(6px)}
-.titles h1{margin:0;font-size:36px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
+.titles h1{margin:0;font-size:36px;letter-spacing:.5px;color:var(--accent);text-shadow:0 0 10px rgba(214,245,143,.25)}
 .titles p{margin:2px 0 0;color:#ddd}
 
 .auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -18,44 +26,48 @@ button:hover{border-color:#5bd5ff}
 button.ghost{background:transparent}
 .social-logins{display:flex;gap:6px}
 .kakao{background:#FEE500;color:#000;border:0}
+.kakao.soon{opacity:.65;filter:grayscale(.2);cursor:not-allowed}
+.kakao.soon:hover{border-color:#333}
 
-/* 무대/양피지 */
+/* =============== 무대/양피지 =============== */
 .stage{display:flex;justify-content:center;padding:16px}
 .parchment{
   position:relative;
-  width:min(1580px,98vw);      /* 크게 */
-  aspect-ratio:770/420;        /* bg.png 비율 */
+  width:min(1580px,98vw);          /* 크게 보기 */
+  aspect-ratio:770/420;            /* bg.png 비율 */
   margin:0 auto;
 }
 .parchment-bg{
-  position:absolute;inset:0;width:100%;height:100%;
-  object-fit:contain;pointer-events:none;
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:contain; pointer-events:none;
 }
 
-/* 양피지 안쪽 안전영역: 좌/우 150px 제외 */
+/* 양피지 안쪽 안전영역: 좌/우 150px 비움 */
 .parchment-inset{
   position:absolute;
-  left:150px; right:150px;     /* 말린 가장자리 제외 */
+  left:150px; right:150px;         /* 말린 가장자리 제외 */
   top:16%; bottom:9%;
   display:grid;
-  grid-template-columns:42% 58%;  /* 좌/우 비율 */
+  grid-template-columns:42% 58%;   /* 좌/우 비율 */
   gap:24px;
+  min-height:0;                    /* 내부 스크롤 안전 */
 }
 
-/* 카드(그리드 자식) */
+/* =============== 카드 공통 =============== */
 .card{
   position:relative;
-  background:rgba(0,0,0,.22);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--panel);
+  border:1px solid var(--border);
   border-radius:8px;
-  box-shadow:0 12px 40px rgba(0,0,0,.45);
+  box-shadow:var(--shadow);
   padding:14px;
+  min-height:0;
 }
-.left{grid-column:1}
-.right{grid-column:2}
-
-/* 내 전투력 패널 */
 .card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.3)}
+.left{grid-column:1}
+.right{grid-column:2; display:flex; flex-direction:column}
+
+/* =============== 내 전투력 패널 =============== */
 .my-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .my-quick .stat{background:#e9f0f8;color:#111;border-radius:6px;padding:8px;text-align:center;border:1px solid #c7d5e2}
 .my-quick .label{display:block;font-size:12px;color:#333;margin-bottom:4px}
@@ -67,39 +79,54 @@ button.ghost{background:transparent}
 .grid input{padding:10px 12px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee}
 .attendance{margin-top:12px;color:#f2f4f8;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 
-/* 명예의 전당 */
-.hall-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+/* =============== 명예의 전당 =============== */
+.hall-head{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .tabs{display:flex;gap:8px}
 .tabs button{padding:6px 10px}
 .tabs .active{border-color:#7fd3ff;box-shadow:0 0 0 1px #7fd3ff inset}
 
-/* Top5 보드 */
+/* 보드: 1st는 두 줄 차지, 절대 섹션을 넘지 않음 */
 .hof{
+  flex:1 1 auto;              /* .right 안에서 남은 높이 꽉 채움 */
+  min-height:0;
   display:grid;
-  grid-template-areas:
-    "first second third"
-    "first fourth fifth";
-  grid-template-columns:2fr 1.2fr 1.2fr;
-  gap:10px;align-items:end;height:100%;
+  grid-template-columns:1.35fr 1fr 1fr;  /* 1st 약간 더 넓게 */
+  grid-template-rows:repeat(2,1fr);      /* 위/아래 두 줄 동일 높이 */
+  gap:14px;
+  align-items:stretch;
 }
-.hof-card{border:1px solid #444;background:#111;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
-.hof-card img{aspect-ratio:3/4;object-fit:cover;border-radius:6px}
-.hof-card .name{font-weight:700}
-.hof-card .place{font-weight:900}
-.hof .first{grid-area:first}
-.hof .second{grid-area:second}
-.hof .third{grid-area:third}
-.hof .fourth{grid-area:fourth}
-.hof .fifth{grid-area:fifth}
+.hof .first{grid-row:1 / span 2}         /* 맨 위부터 두 줄 차지 */
 
-/* 반응형 */
+/* 각 카드: 셀 높이 100% 사용, 내부는 3행(순위/이미지/닉) */
+.hof-card{
+  height:100%;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  border:1px solid #444;background:#111;border-radius:10px;
+  padding:8px;gap:6px;overflow:hidden;
+}
+.hof-card .place{font-weight:900;text-align:center}
+.hof-card img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.hof-card .name{font-weight:700;text-align:center}
+
+/* =============== 반응형 =============== */
+@media (max-width:1180px){
+  .titles h1{font-size:30px}
+  .mascot{width:60px}
+}
 @media (max-width:980px){
   .parchment-inset{
     left:6%; right:6%;
     grid-template-columns:1fr;
     gap:12px;
   }
-  .titles h1{font-size:28px}
-  .mascot{width:56px}
+  .left,.right{grid-column:auto}
   .auth-inline input{width:130px}
+  /* 보드는 단일 열, 일정 높이 카드로 */
+  .hof{
+    grid-template-columns:1fr;
+    grid-template-rows:repeat(5, minmax(180px, 1fr));
+    gap:10px;
+  }
+  .hof .first{grid-row:auto}
 }
