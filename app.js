@@ -1,98 +1,100 @@
 const sb = supabase.createClient(window.__SB_URL__, window.__SB_ANON__);
 
-const $login = document.getElementById('btn-login');
-const $logout = document.getElementById('btn-logout');
+// ----- Auth -----
+const $formAuth = document.getElementById('auth-form');
+const $email = document.getElementById('auth-email');
+const $pass = document.getElementById('auth-pass');
+const $btnSignup = document.getElementById('btn-signup');
+const $btnLogout = document.getElementById('btn-logout');
+const $btnKakao = document.getElementById('btn-login-kakao');
 const $me = document.getElementById('me');
-const $leaderboard = document.getElementById('leaderboard');
-const $myRank = document.getElementById('my-rank');
-const $tabs = document.querySelector('.tabs');
+
+$formAuth.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const { error } = await sb.auth.signInWithPassword({ email:$email.value.trim(), password:$pass.value });
+  if (error) return alert('로그인 실패: '+error.message);
+  await afterLogin();
+});
+
+$btnSignup.addEventListener('click', async ()=>{
+  const email = $email.value.trim(), password = $pass.value;
+  if (!email || !password) return alert('이메일/비밀번호 입력');
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) return alert('가입 실패: '+error.message);
+  await afterLogin(true);
+  alert('가입 완료!');
+});
+
+$btnKakao.addEventListener('click', async ()=>{
+  await sb.auth.signInWithOAuth({
+    provider:'kakao',
+    options:{ redirectTo: window.location.href }
+  });
+});
+
+$btnLogout.addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  location.reload();
+});
+
+async function afterLogin(callEnsure=false){
+  if (callEnsure){
+    // 프로필 자동 생성
+    await sb.rpc('ensure_profile').catch(()=>{});
+  }else{
+    // 소셜 로그인 등에도 보장
+    await sb.rpc('ensure_profile').catch(()=>{});
+  }
+  await refreshSessionUI();
+}
+
+async function refreshSessionUI(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if (user){
+    document.getElementById('auth-form').style.display='none';
+    document.getElementById('btn-logout').style.display='inline-block';
+    $me.textContent = user.email || '로그인됨';
+    await loadMe();
+    await loadTop5();
+  }else{
+    $me.textContent='';
+  }
+}
+sb.auth.onAuthStateChange((_e)=>refreshSessionUI());
+refreshSessionUI();
+
+// ----- 내 전투력/출석 -----
+const $meRankBP = document.getElementById('me-rank-bp');
+const $meLevel = document.getElementById('me-level');
+const $meBP = document.getElementById('me-bp');
+const $meNick = document.getElementById('me-nick');
+const $meAttend = document.getElementById('me-attend');
+
+async function loadMe(){
+  const { data, error } = await sb.from('v_my_rank_current').select('*').maybeSingle();
+  if (error || !data){ return; }
+  $meRankBP.textContent = data.rank_total_by_battle_power ?? '-';
+  $meLevel.textContent = data.level ?? '-';
+  $meBP.textContent = data.battle_power ?? '-';
+  $meNick.textContent = data.nickname ?? '스탠더';
+  $meAttend.textContent = data.attend ?? 0;
+  // 폼에 현재값 채워두기
+  fillForm(data);
+}
+
+// 스탯 업데이트 토글/저장
+const $btnToggle = document.getElementById('btn-toggle-upsert');
+const $btnSave = document.getElementById('btn-save');
 const $form = document.getElementById('form-upsert');
 const $saveMsg = document.getElementById('save-msg');
 
-let mode = 'total'; // 'total' | 'bp'
-
-async function refreshSessionUI(){
-  const { data: { user } } = await sb.auth.getUser();
-  if (user){
-    $login.style.display='none';
-    $logout.style.display='inline-block';
-    $me.textContent = user.email || user.user_metadata?.user_name || '로그인됨';
-    await loadMyRank();
-    await loadLeaderboard();
-  } else {
-    $login.style.display='inline-block';
-    $logout.style.display='none';
-    $me.textContent = '';
-    $myRank.textContent = '로그인 필요';
-    $leaderboard.innerHTML = '';
-  }
-}
-
-$login.addEventListener('click', async ()=>{
-  // GitHub OAuth 사용 (Supabase Auth의 GitHub 프로바이더 활성화 필요)
-  await sb.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: window.location.href }});
-});
-$logout.addEventListener('click', async ()=>{
-  await sb.auth.signOut();
-  await refreshSessionUI();
+$btnToggle.addEventListener('click', ()=>{
+  const show = $form.style.display === 'none';
+  $form.style.display = show ? 'block' : 'none';
+  $btnSave.style.display = show ? 'inline-block' : 'none';
 });
 
-$tabs.addEventListener('click', (e)=>{
-  if (e.target.tagName !== 'BUTTON') return;
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  mode = e.target.dataset.tab;
-  loadLeaderboard();
-});
-
-async function loadMyRank(){
-  const { data, error } = await sb.from('v_my_rank_current').select('*').maybeSingle();
-  if (error){ $myRank.textContent = '조회 오류'; return; }
-  if (!data){ $myRank.textContent = '데이터 없음'; return; }
-  $myRank.innerHTML = `
-    <div class="lb-row">
-      <div class="lb-name">${data.nickname} (${data.class_code})</div>
-      <div class="lb-metrics">
-        <span class="badge ok">총점랭크 ${data.rank_total_by_total_score ?? '-'}</span>
-        <span class="badge">BP랭크 ${data.rank_total_by_battle_power ?? '-'}</span>
-        <span class="badge">BP ${data.battle_power ?? 0}</span>
-        <span class="badge ok">TS ${data.total_score ?? 0}</span>
-      </div>
-    </div>
-  `;
-}
-
-async function loadLeaderboard(){
-  const body = {
-    p_season: null,          // null이면 current_season()
-    p_basis: mode,           // 'total' or 'bp'
-    p_class_code: null,      // 특정 클래스만 보고 싶으면 코드 넣기
-    p_page: 1,
-    p_page_size: 5
-  };
-  const { data, error } = await sb.rpc('rank_list_public', body);
-  if (error){ $leaderboard.textContent = '조회 오류'; return; }
-  renderLB(data || []);
-}
-function renderLB(rows){
-  $leaderboard.innerHTML = '';
-  rows.forEach(r=>{
-    const row = document.createElement('div');
-    row.className = 'lb-row';
-    row.innerHTML = `
-      <div class="lb-rank">${r.rank_num ?? '-'}</div>
-      <div class="lb-name">${r.nickname ?? '(익명)'}</div>
-      <div class="lb-metrics">
-        <span class="badge">BP ${r.battle_power ?? 0}</span>
-        <span class="badge ok">TS ${r.total_score ?? 0}</span>
-      </div>
-    `;
-    $leaderboard.appendChild(row);
-  });
-}
-
-$form.addEventListener('submit', async (e)=>{
-  e.preventDefault();
+$btnSave.addEventListener('click', async ()=>{
   const fd = new FormData($form);
   const body = {
     p_season: null,
@@ -102,16 +104,67 @@ $form.addEventListener('submit', async (e)=>{
     p_accuracy: num(fd.get('accuracy')),
     p_memory_pct: numf(fd.get('memory_pct')),
     p_subjugate: num(fd.get('subjugate')),
-    p_attend: num(fd.get('attend'))
+    p_attend: null // 출석은 운영진만
   };
-  const { data, error } = await sb.rpc('self_upsert_stats', body);
+  const { error } = await sb.rpc('self_upsert_stats', body);
   if (error){ $saveMsg.textContent = '저장 실패'; return; }
   $saveMsg.textContent = '저장 완료';
-  await loadMyRank();
-  await loadLeaderboard();
+  await loadMe(); await loadTop5();
 });
-const num = v => (v===''||v==null)?null:Number(v);
+const num  = v => (v===''||v==null)?null:Number(v);
 const numf = v => (v===''||v==null)?null:Number(v);
+function fillForm(d){
+  $form.level.value      = d.level ?? '';
+  $form.attack.value     = d.attack ?? '';
+  $form.defence.value    = d.defence ?? '';
+  $form.accuracy.value   = d.accuracy ?? '';
+  $form.memory_pct.value = d.memory_pct ?? '';
+  $form.subjugate.value  = d.subjugate ?? '';
+}
 
-sb.auth.onAuthStateChange(()=>refreshSessionUI());
-refreshSessionUI();
+// ----- 명예의 전당 Top5 (총점/전투력 탭) -----
+const CLASS_IMG = {
+  // 라벨 → 파일명 (assets/ 안)
+  '환영검사':'환영검사.png',
+  '심연추방자':'심연추방자.png',
+  '주문각인사':'주문각인사.png',
+  '집행관':'집행관.png',
+  '태양감시자':'태양감시자.png',
+  '향사수':'향사수.png'
+};
+
+let mode = 'total';
+const $tabs = document.querySelector('.tabs');
+$tabs.addEventListener('click',(e)=>{
+  if (e.target.tagName!=='BUTTON') return;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  mode = e.target.dataset.tab;
+  loadTop5();
+});
+
+async function loadTop5(){
+  const { data, error } = await sb.rpc('rank_list_public', {
+    p_season:null, p_basis:mode, p_class_code:null, p_page:1, p_page_size:5
+  });
+  if (error){ document.getElementById('hof-board').innerHTML = '<p>조회 오류</p>'; return; }
+  renderTop5(data || []);
+}
+
+function renderTop5(rows){
+  const board = document.getElementById('hof-board');
+  board.innerHTML = '';
+  const places = ['first','second','third','fourth','fifth'];
+  rows.slice(0,5).forEach((r,i)=>{
+    const div = document.createElement('div');
+    div.className = `hof-card ${places[i]||'first'}`;
+    const imgFile = CLASS_IMG[r.class_label] || '환영검사.png';
+    div.innerHTML = `
+      <div class="place">${placeText(i+1)}</div>
+      <img src="assets/${imgFile}" alt="${r.class_label||''}" />
+      <div class="name">${r.nickname || '(익명)'}</div>
+    `;
+    board.appendChild(div);
+  });
+}
+const placeText = (n)=> n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
