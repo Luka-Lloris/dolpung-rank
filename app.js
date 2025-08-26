@@ -28,11 +28,9 @@ $btnSignup.addEventListener('click', async ()=>{
   alert('가입 완료!');
 });
 
-$btnKakao.addEventListener('click', async ()=>{
-  await sb.auth.signInWithOAuth({
-    provider: 'kakao',
-    options: { redirectTo: window.location.href }
-  });
+$btnKakao.addEventListener('click', (e)=>{
+  e.preventDefault();
+  alert('카카오 로그인은 준비 중입니다.\n이메일/비밀번호로 로그인해 주세요!');
 });
 
 $btnLogout.addEventListener('click', async ()=>{
