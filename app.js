@@ -28,9 +28,10 @@ $btnSignup.addEventListener('click', async ()=>{
   alert('가입 완료!');
 });
 
+// Kakao: 준비중 (리다이렉트 막음)
 $btnKakao.addEventListener('click', (e)=>{
   e.preventDefault();
-  alert('카카오 로그인은 준비 중입니다.\n이메일/비밀번호로 로그인해 주세요!');
+  // 안내만, 아무 동작 없음
 });
 
 $btnLogout.addEventListener('click', async ()=>{
@@ -166,10 +167,10 @@ function renderTop5(rows){
     const imgSrc = classImgPath(r.class_label);
     div.innerHTML = `
       <div class="place">${placeText(i+1)}</div>
-      <img alt="${r.class_label || 'placeholder'}">
+      <div class="art"><img alt="${r.class_label || 'placeholder'}"></div>
       <div class="name">${r.nickname || '&nbsp;'}</div>
     `;
-    const img = div.querySelector('img');
+    const img = div.querySelector('.art img');
     img.src = imgSrc;
     img.onerror = ()=>{ img.src = classImgPath(null); };
     board.appendChild(div);
