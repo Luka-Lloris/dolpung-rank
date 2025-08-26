@@ -130,3 +130,18 @@ button.ghost{background:transparent}
   }
   .hof .first{grid-row:auto}
 }
+
+/* ==== parchment 안쪽 시작 위치/여백 즉시 조정용(override) ==== */
+:root{
+  --inset-left:150px;   /* 좌 여백 */
+  --inset-right:150px;  /* 우 여백 */
+  --inset-top:8%;       /* ★ 위쪽 여백: 16% → 8% 로 줄임 (더 올리고 싶으면 6%/5%) */
+  --inset-bottom:8%;    /* 아래 여백도 살짝 줄임(필요 없으면 기존 9~10%로) */
+}
+.parchment-inset{
+  left:var(--inset-left);
+  right:var(--inset-right);
+  top:var(--inset-top);
+  bottom:var(--inset-bottom);
+}
+
