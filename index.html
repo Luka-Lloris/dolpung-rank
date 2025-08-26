@@ -1,144 +1,155 @@
 <!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>The Wind | Guild Rankings</title>
-  <link rel="stylesheet" href="styles.css?v=20" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-  <!-- 헤더 -->
-  <header class="page-header">
-    <div class="brand">
-      <img src="assets/윈둥이.png" alt="윈둥이" class="mascot" />
-      <div class="titles">
-        <h1>The Wind</h1>
-        <p>길드관리 시스템에 오신걸 환영합니다.</p>
-      </div>
-    </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>The Wind | Guild Rankings</title>
 
-    <div class="auth">
-      <form id="auth-form" class="auth-inline">
-        <input type="email" id="auth-email" placeholder="이메일" required />
-        <input type="password" id="auth-pass" placeholder="비밀번호" required />
-        <button type="submit" id="btn-signin">로그인</button>
-        <button type="button" id="btn-signup" class="ghost">최초가입</button>
+    <link rel="stylesheet" href="styles.css?v=15" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <!-- 헤더 -->
+    <header class="page-header">
+      <div class="brand">
+        <img src="assets/윈둥이.png" alt="윈둥이" class="mascot" />
+        <div class="titles">
+          <h1>The Wind</h1>
+          <p>길드관리 시스템에 오신걸 환영합니다.</p>
+        </div>
+      </div>
+
+      <nav class="top-actions">
+        <a id="admin-link" href="admin.html" class="admin-link" style="display:none;">관리자 메뉴</a>
+      </nav>
+
+      <div class="auth">
+        <form id="auth-form" class="auth-inline">
+          <input type="email" id="auth-email" placeholder="이메일" required />
+          <input type="password" id="auth-pass" placeholder="비밀번호" required />
+          <button type="submit" id="btn-signin">로그인</button>
+          <button type="button" id="btn-signup" class="ghost">최초가입</button>
+        </form>
+
+        <div class="social-logins">
+          <button type="button" id="btn-login-kakao" class="kakao soon">
+            Kakao 로그인 기능은 준비 중에 있습니다
+          </button>
+        </div>
+
+        <button id="btn-logout" class="ghost" style="display:none;">로그아웃</button>
+        <span id="me"></span>
+      </div>
+    </header>
+
+    <!-- 최초가입 모달 -->
+    <dialog id="dlg-signup" class="modal">
+      <form id="signup-form" method="dialog" class="modal-card">
+        <h3>최초가입</h3>
+
+        <label>이메일
+          <input type="email" id="su-email" required />
+        </label>
+
+        <label>비밀번호
+          <input type="password" id="su-pass" required />
+        </label>
+
+        <label>비밀번호 확인
+          <input type="password" id="su-pass2" required />
+        </label>
+
+        <label>닉네임
+          <input type="text" id="su-nick" maxlength="20" required />
+        </label>
+
+        <label>주 클래스
+          <select id="su-class"><option value="">(선택)</option></select>
+        </label>
+
+        <p class="hint">가입 후 운영진 승인까지 기능 사용 및 랭킹 반영이 제한됩니다.</p>
+
+        <div class="modal-actions">
+          <button type="reset" value="cancel" class="ghost" id="su-cancel">취소</button>
+          <button type="button" id="su-submit">가입</button>
+        </div>
       </form>
+    </dialog>
 
-      <div class="social-logins">
-        <button type="button" id="btn-login-kakao" class="kakao soon">
-          Kakao 로그인 기능은 준비 중에 있습니다
-        </button>
-      </div>
+    <!-- 본문 -->
+    <main class="stage">
+      <div class="parchment">
+        <img src="assets/bg.png" alt="" class="parchment-bg" />
 
-      <a id="btn-admin" href="admin.html" class="ghost" style="display:none;">관리자 메뉴</a>
-      <button id="btn-logout" class="ghost" style="display:none;">로그아웃</button>
-      <span id="me"></span>
-    </div>
-  </header>
+        <div class="parchment-inset">
+          <!-- 왼쪽: 내 전투력 / 티저 -->
+          <section class="card left">
+            <h2>내 전투력</h2>
 
-  <!-- 최초가입 모달 -->
-  <dialog id="dlg-signup" class="modal">
-    <form id="signup-form" method="dialog" class="modal-card">
-      <h3>최초가입</h3>
-
-      <label>이메일
-        <input type="email" id="su-email" required />
-      </label>
-      <label>비밀번호
-        <input type="password" id="su-pass" required />
-      </label>
-      <label>비밀번호 확인
-        <input type="password" id="su-pass2" required />
-      </label>
-      <label>닉네임
-        <input type="text" id="su-nick" maxlength="20" required />
-      </label>
-      <label>주 클래스
-        <select id="su-class"><option value="">(선택)</option></select>
-      </label>
-
-      <p class="hint">가입 후 운영진 승인까지 기능 사용 및 랭킹 반영이 제한됩니다.</p>
-
-      <div class="modal-actions">
-        <button type="reset" value="cancel" class="ghost" id="su-cancel">취소</button>
-        <button type="button" id="su-submit">가입</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- 본문(양피지) -->
-  <main class="stage">
-    <div class="parchment">
-      <img src="assets/bg.png" alt="" class="parchment-bg" />
-
-      <div class="parchment-inset">
-        <!-- 왼쪽 -->
-        <section class="card left">
-          <h2>내 전투력</h2>
-
-          <!-- 로그인 후 -->
-          <div id="authed-panel" style="display:none">
-            <div class="my-quick">
-              <div class="stat"><span class="label">순위</span><span class="value" id="me-rank-bp">-</span></div>
-              <div class="stat"><span class="label">레벨</span><span class="value" id="me-level">-</span></div>
-              <div class="stat"><span class="label">전투력</span><span class="value" id="me-bp">-</span></div>
+            <!-- 로그인 전: 티저 영상 -->
+            <div id="teaser" class="teaser-wrap">
+              <video id="teaser-video" width="450" height="300" controls preload="metadata" poster="assets/윈둥자.png">
+                <source src="assets/wind_strike.mp4" type="video/mp4" />
+              </video>
             </div>
 
-            <div class="actions">
-              <button id="btn-toggle-upsert" type="button">스탯 업데이트</button>
-              <button id="btn-save" class="small" type="button" style="display:none;">저장</button>
-              <span id="save-msg"></span>
-            </div>
-
-            <form id="form-upsert" class="upsert" style="display:none;">
-              <div class="grid">
-                <label>레벨 <input type="number" name="level" min="1" /></label>
-                <label>공격 <input type="number" name="attack" min="0" /></label>
-                <label>방어 <input type="number" name="defence" min="0" /></label>
-                <label>명중 <input type="number" name="accuracy" min="0" /></label>
-                <label>기억% <input type="number" step="0.01" name="memory_pct" min="0" max="100" /></label>
-                <label>토벌 <input type="number" name="subjugate" min="0" /></label>
+            <!-- 로그인 후: 요약 + 폼 -->
+            <div id="me-area" style="display:none;">
+              <div class="my-quick">
+                <div class="stat"><span class="label">순위</span><span class="value" id="me-rank-bp">-</span></div>
+                <div class="stat"><span class="label">레벨</span><span class="value" id="me-level">-</span></div>
+                <div class="stat"><span class="label">전투력</span><span class="value" id="me-bp">-</span></div>
               </div>
-            </form>
 
-            <div class="attendance">
-              이번 시즌 <b id="me-nick">스탠더</b>님은… <b id="me-attend">0</b>회 출석 중입니다.
+              <div class="actions">
+                <button id="btn-toggle-upsert" type="button">스탯 업데이트</button>
+                <button id="btn-save" class="small" type="button" style="display:none;">저장</button>
+                <span id="save-msg"></span>
+              </div>
+
+              <form id="form-upsert" class="upsert" style="display:none;">
+                <div class="grid">
+                  <label>레벨 <input type="number" name="level" min="1" /></label>
+                  <label>공격 <input type="number" name="attack" min="0" /></label>
+                  <label>방어 <input type="number" name="defence" min="0" /></label>
+                  <label>명중 <input type="number" name="accuracy" min="0" /></label>
+                  <label>기억% <input type="number" step="0.01" name="memory_pct" min="0" max="100" /></label>
+                  <label>토벌 <input type="number" name="subjugate" min="0" /></label>
+                </div>
+              </form>
+
+              <div class="attendance">
+                이번 시즌 <b id="me-nick">스탠더</b>님은… <b id="me-attend">0</b>회 출석 중입니다.
+              </div>
             </div>
-          </div>
+          </section>
 
-          <!-- 비로그인: 영상 -->
-          <div id="guest-video" class="guest-video">
-            <video src="assets/wind_strike.mp4" autoplay muted loop playsinline controls
-              style="width:100%;height:100%;object-fit:cover"></video>
-          </div>
-        </section>
-
-        <!-- 오른쪽 -->
-        <section class="card right">
-          <div class="hall-head">
-            <h2>명예의 전당</h2>
-            <div class="tabs">
-              <button data-tab="total" class="active" type="button">총점부문</button>
-              <button data-tab="bp" type="button">전투력부문</button>
+          <!-- 오른쪽: 명예의 전당 -->
+          <section class="card right">
+            <div class="hall-head">
+              <h2>명예의 전당</h2>
+              <div class="tabs">
+                <button data-tab="total" class="active" type="button">총점부문</button>
+                <button data-tab="bp" type="button">전투력부문</button>
+              </div>
             </div>
-          </div>
 
-          <div id="hof-board" class="hof">
-            <div class="first"></div>
-            <div class="others"></div>
-          </div>
-        </section>
+            <div id="hof-board" class="hof"></div>
+          </section>
+        </div>
       </div>
-    </div>
-  </main>
+    </main>
 
-  <script>
-    window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
-    window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
-  </script>
-  <script src="app.js?v=20"></script>
-  <noscript>이 페이지를 사용하려면 JavaScript가 필요합니다.</noscript>
-</body>
+    <!-- Supabase Project Env -->
+    <script>
+      window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
+      window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
+    </script>
+
+    <script src="app.js?v=15"></script>
+    <noscript>이 페이지를 사용하려면 JavaScript가 필요합니다.</noscript>
+  </body>
 </html>
