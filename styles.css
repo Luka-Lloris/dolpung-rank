@@ -1,74 +1,122 @@
-/* RESET & BASE */
+/* 기본 */
 *{box-sizing:border-box}
-html,body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-a{color:#9fd6ff;text-decoration:none}
-button{border:1px solid #333;background:#111;color:#eee;padding:8px 12px;border-radius:10px;cursor:pointer}
+:root{
+  --paper-w: 1560px;       /* 전체 가로 상한 */
+  --paper-inset-x: 150px;  /* 양피지 안쪽 좌우 여백 */
+}
+body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+
+/* 헤더 */
+.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000;position:sticky;top:0;z-index:10}
+.brand{display:flex;gap:10px;align-items:center}
+.mascot{width:64px;height:auto;transform:translateY(4px)}
+.titles h1{margin:0;font-size:30px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
+.titles p{margin:2px 0 0;color:#ddd}
+.top-actions{margin-right:auto;margin-left:16px}
+.admin-link{padding:8px 10px;border:1px solid #444;border-radius:10px;text-decoration:none;color:#9fe}
+.admin-link:hover{border-color:#7fd3ff}
+
+.auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.auth-inline{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.auth-inline input{padding:8px 10px;border-radius:10px;border:1px solid #333;background:#0b0e14;color:#eee;width:160px}
+button{border:1px solid #333;background:#111;color:#eee;padding:9px 12px;border-radius:12px;cursor:pointer}
 button:hover{border-color:#5bd5ff}
 button.ghost{background:transparent}
-button.warn{background:#3b1111;border-color:#662}
-input,select{background:#0c0f16;color:#eee;border:1px solid #333;border-radius:10px;padding:8px 10px}
-img{max-width:100%;height:auto;display:block}
+.social-logins{display:flex;gap:6px}
+.kakao{background:#FEE500;color:#000;border:0}
 
-/* HEADER */
-.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000;position:sticky;top:0;z-index:20}
-.brand{display:flex;gap:10px;align-items:center}
-.mascot{width:56px;height:auto}
-.titles h1{margin:0;font-size:28px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
-.titles p{margin:2px 0 0;color:#ccc}
-.auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-
-/* PARCHMENT */
+/* 무대 / 양피지 */
 .stage{display:flex;justify-content:center;padding:16px}
-.parchment{position:relative;width:min(1560px,98vw);aspect-ratio: 770 / 420;margin:0 auto}
-.parchment-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
-.parchment-inset{position:absolute;left:150px;right:150px;top:60px;bottom:60px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.parchment{
+  position:relative;
+  width:min(var(--paper-w), 98vw);
+  aspect-ratio: 770 / 420;   /* bg.png 비율 */
+  margin:0 auto;
+}
+.parchment-bg{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:contain; pointer-events:none;
+}
 
-/* CARD */
-.card{background:rgba(0,0,0,.20);border:1px solid rgba(255,255,255,.08);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.45);padding:12px;overflow:hidden}
-.card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.25);font-size:20px}
+/* 안쪽 레이아웃(좌우 150px 마진 유지) */
+.parchment-inset{
+  position:absolute; inset:0;
+  left:var(--paper-inset-x); right:var(--paper-inset-x);
+  display:grid; grid-template-columns: 1fr 1fr; gap:18px;
+  padding-top:10%; padding-bottom:7%;
+}
+.card{
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);
+  padding:14px;
+  display:flex; flex-direction:column;
+}
+.card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.3)}
 
-.left{grid-column:1}
-.right{grid-column:2;display:flex;flex-direction:column}
-
-/* LEFT: MY PANEL */
-.my-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+/* 내 전투력 패널(축소) */
+.my-quick{display:grid;grid-template-columns:repeat(3,120px);gap:8px;margin-bottom:10px}
 .my-quick .stat{background:#e9f0f8;color:#111;border-radius:6px;padding:6px;text-align:center;border:1px solid #c7d5e2}
-.my-quick .label{display:block;font-size:11px;color:#333;margin-bottom:4px}
+.my-quick .label{display:block;font-size:11px;color:#333;margin-bottom:3px}
 .my-quick .value{font-size:16px;font-weight:700}
-.actions{display:flex;align-items:center;gap:6px;margin:6px 0}
+.actions{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .actions .small{padding:6px 10px;font-size:12px}
-.upsert .grid{display:grid;gap:6px;grid-template-columns:repeat(2,1fr)}
-.upsert label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#ddd}
-.upsert input{padding:8px 10px}
-.attendance{margin-top:8px;color:#ddd}
-.guest-video{width:450px;max-width:100%;height:300px;border:1px solid #444;border-radius:10px;overflow:hidden}
+.grid{display:grid;gap:6px;grid-template-columns:repeat(2, minmax(0, 1fr))}
+.grid label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#ddd}
+.grid input{padding:8px 10px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee}
+.attendance{margin-top:10px;color:#ddd}
 
-/* RIGHT: HALL OF FAME */
+/* 티저 */
+.teaser-wrap{display:flex;align-items:flex-start;justify-content:flex-start}
+#teaser-video{width:450px;max-width:100%;height:300px;border-radius:10px;border:1px solid #333;background:#000}
+
+/* 명예의 전당 (왼쪽 1, 오른쪽 4) */
 .hall-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.tabs{display:flex;gap:6px}
+.tabs{display:flex;gap:8px}
+.tabs button{padding:6px 10px}
 .tabs .active{border-color:#7fd3ff;box-shadow:0 0 0 1px #7fd3ff inset}
 
-/* 1등(왼) + 2~5등(우, 2x2) */
-.hof{display:grid;grid-template-areas:"first others" "first others";grid-template-columns:1.2fr 1fr;grid-template-rows:1fr 1fr;gap:10px;flex:1 1 auto}
-.hof .first{grid-area:first}
-.hof .others{grid-area:others;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px}
-
-.hof-card{border:1px solid #444;background:#111;border-radius:10px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:6px}
+/* 그리드: first는 크게, 나머지 4개는 오른쪽 2×2 */
+.hof{
+  display:grid;
+  grid-template-areas:
+    "first second third"
+    "first fourth fifth";
+  grid-template-columns:1.5fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap:10px;
+  height:100%;
+}
+.hof-card{border:1px solid #444;background:#111;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .hof-card img{width:100%;border-radius:6px;object-fit:cover;aspect-ratio:3/4}
-.hof-card .name{font-weight:700;font-size:14px}
-.hof-card .place{font-weight:900;font-size:12px;align-self:flex-start}
+.hof .first {grid-area:first}
+.hof .second{grid-area:second}
+.hof .third {grid-area:third}
+.hof .fourth{grid-area:fourth}
+.hof .fifth {grid-area:fifth}
+.hof-card .name{font-weight:700}
+.hof-card .place{font-weight:900}
 
-/* ADMIN PAGE */
-.admin-wrap{max-width:980px;margin:16px auto;padding:0 12px;display:grid;gap:14px}
-.admin-card{background:#0a0d13;border:1px solid #222;border-radius:10px;padding:12px}
-.admin-card h2{margin:0 0 8px}
-.table .row{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:8px;padding:6px;border-bottom:1px solid #1a1f2b;align-items:center}
-.table .row:last-child{border-bottom:0}
-.table .actions{display:flex;gap:6px;align-items:center}
+/* 첫 번째 카드는 잘림을 줄이기 위해 contain */
+.hof .first img{object-fit:contain;background:#000}
 
-/* RESPONSIVE */
+/* 반응형 */
+@media (max-width:1200px){
+  :root{ --paper-inset-x: 110px }
+  .my-quick{grid-template-columns:repeat(3,1fr)}
+}
 @media (max-width:980px){
-  .parchment-inset{left:24px;right:24px;top:48px;bottom:48px;grid-template-columns:1fr}
-  .right{grid-column:1}
-  .hof{grid-template-areas:"first" "others";grid-template-columns:1fr;grid-template-rows:auto auto}
+  :root{ --paper-inset-x: 6% }
+  .parchment-inset{grid-template-columns:1fr; padding-top:10%; padding-bottom:9%}
+  .hof{
+    grid-template-areas:
+      "first"
+      "second"
+      "third"
+      "fourth"
+      "fifth";
+    grid-template-columns:1fr;
+    grid-template-rows:auto;
+  }
 }
