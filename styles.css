@@ -6,6 +6,12 @@
   --border:rgba(255,255,255,.08);
   --shadow:0 12px 40px rgba(0,0,0,.45);
   --accent:#d6f58f;
+
+  /* 양피지 안쪽 여백(조절 쉬움) */
+  --inset-left:150px;
+  --inset-right:150px;
+  --inset-top:8%;
+  --inset-bottom:8%;
 }
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -42,15 +48,15 @@ button.ghost{background:transparent}
   object-fit:contain; pointer-events:none;
 }
 
-/* 양피지 안쪽 안전영역: 좌/우 150px 비움 */
+/* 양피지 안쪽 안전영역: 좌/우 150px + 상/하 퍼센트 */
 .parchment-inset{
   position:absolute;
-  left:150px; right:150px;         /* 말린 가장자리 제외 */
-  top:16%; bottom:9%;
+  left:var(--inset-left); right:var(--inset-right);
+  top:var(--inset-top); bottom:var(--inset-bottom);
   display:grid;
   grid-template-columns:42% 58%;   /* 좌/우 비율 */
   gap:24px;
-  min-height:0;                    /* 내부 스크롤 안전 */
+  min-height:0;
 }
 
 /* =============== 카드 공통 =============== */
@@ -95,9 +101,9 @@ button.ghost{background:transparent}
   gap:14px;
   align-items:stretch;
 }
-.hof .first{grid-row:1 / span 2}         /* 맨 위부터 두 줄 차지 */
+.hof .first{grid-row:1 / span 2}         /* 1st가 두 줄 차지 */
 
-/* 각 카드: 셀 높이 100% 사용, 내부는 3행(순위/이미지/닉) */
+/* 카드: 셀 높이 100% 사용, 내부는 place / art / name */
 .hof-card{
   height:100%;
   display:grid;
@@ -106,8 +112,21 @@ button.ghost{background:transparent}
   padding:8px;gap:6px;overflow:hidden;
 }
 .hof-card .place{font-weight:900;text-align:center}
-.hof-card img{width:100%;height:100%;object-fit:cover;border-radius:6px}
 .hof-card .name{font-weight:700;text-align:center}
+
+/* 3:4 비율 상자 + contain(비율 유지, 크롭 방지) */
+.hof-card .art{
+  width:100%;
+  aspect-ratio:3/4;
+  background:#0b0b0b;
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.hof-card .art img{
+  max-width:100%;max-height:100%;
+  width:auto;height:auto;object-fit:contain;
+}
 
 /* =============== 반응형 =============== */
 @media (max-width:1180px){
@@ -122,7 +141,6 @@ button.ghost{background:transparent}
   }
   .left,.right{grid-column:auto}
   .auth-inline input{width:130px}
-  /* 보드는 단일 열, 일정 높이 카드로 */
   .hof{
     grid-template-columns:1fr;
     grid-template-rows:repeat(5, minmax(180px, 1fr));
@@ -130,18 +148,3 @@ button.ghost{background:transparent}
   }
   .hof .first{grid-row:auto}
 }
-
-/* ==== parchment 안쪽 시작 위치/여백 즉시 조정용(override) ==== */
-:root{
-  --inset-left:150px;   /* 좌 여백 */
-  --inset-right:150px;  /* 우 여백 */
-  --inset-top:8%;       /* ★ 위쪽 여백: 16% → 8% 로 줄임 (더 올리고 싶으면 6%/5%) */
-  --inset-bottom:8%;    /* 아래 여백도 살짝 줄임(필요 없으면 기존 9~10%로) */
-}
-.parchment-inset{
-  left:var(--inset-left);
-  right:var(--inset-right);
-  top:var(--inset-top);
-  bottom:var(--inset-bottom);
-}
-
