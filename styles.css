@@ -1,8 +1,7 @@
 /* 기본 */
 *{box-sizing:border-box}
 body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-/* 공통: 이미지 찢어짐 방지 */
-img{max-width:100%; height:auto; display:block}
+img{max-width:100%;height:auto;display:block}
 
 /* 헤더 */
 .page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000}
@@ -24,34 +23,39 @@ button.ghost{background:transparent}
 .stage{display:flex;justify-content:center;padding:16px}
 .parchment{
   position:relative;
-  width:min(1560px, 98vw);   /* ← 원래 1200px 이었음 */
-  aspect-ratio: 770 / 420;   /* bg.png 비율 그대로 */
+  width:min(1580px,98vw);      /* 크게 */
+  aspect-ratio:770/420;        /* bg.png 비율 */
   margin:0 auto;
 }
 .parchment-bg{
-  position:absolute; inset:0; width:100%; height:100%;
-  object-fit:contain; pointer-events:none;
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;pointer-events:none;
 }
 
-/* 안쪽 레이아웃 */
+/* 양피지 안쪽 안전영역: 좌/우 150px 제외 */
+.parchment-inset{
+  position:absolute;
+  left:150px; right:150px;     /* 말린 가장자리 제외 */
+  top:16%; bottom:9%;
+  display:grid;
+  grid-template-columns:42% 58%;  /* 좌/우 비율 */
+  gap:24px;
+}
+
+/* 카드(그리드 자식) */
 .card{
-  position:absolute; top:16%; bottom:9%;
-  background:rgba(0,0,0,.22);            /* ← 더 어둡게, 글자 잘 보이게 */
+  position:relative;
+  background:rgba(0,0,0,.22);
   border:1px solid rgba(255,255,255,.08);
   border-radius:8px;
-  box-shadow:0 12px 40px rgba(0,0,0,.45); /* 살짝 띄워 보이게 */
+  box-shadow:0 12px 40px rgba(0,0,0,.45);
+  padding:14px;
 }
-
-.grid label, .attendance, .hall-head h2 { 
-  color:#f2f4f8; 
-  text-shadow:0 1px 2px rgba(0,0,0,.6);
-}
-.left{left:6%; right:56%; padding:14px}
-.right{left:46%; right:6%;  padding:14px}
-
-.card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.3)}
+.left{grid-column:1}
+.right{grid-column:2}
 
 /* 내 전투력 패널 */
+.card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.3)}
 .my-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
 .my-quick .stat{background:#e9f0f8;color:#111;border-radius:6px;padding:8px;text-align:center;border:1px solid #c7d5e2}
 .my-quick .label{display:block;font-size:12px;color:#333;margin-bottom:4px}
@@ -59,9 +63,9 @@ button.ghost{background:transparent}
 .actions{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .actions .small{padding:6px 10px;font-size:12px}
 .grid{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
-.grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#ddd}
+.grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#f2f4f8;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .grid input{padding:10px 12px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee}
-.attendance{margin-top:12px;color:#ddd}
+.attendance{margin-top:12px;color:#f2f4f8;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 
 /* 명예의 전당 */
 .hall-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -76,7 +80,7 @@ button.ghost{background:transparent}
     "first second third"
     "first fourth fifth";
   grid-template-columns:2fr 1.2fr 1.2fr;
-  gap:10px; align-items:end; height:100%;
+  gap:10px;align-items:end;height:100%;
 }
 .hof-card{border:1px solid #444;background:#111;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
 .hof-card img{aspect-ratio:3/4;object-fit:cover;border-radius:6px}
@@ -90,17 +94,12 @@ button.ghost{background:transparent}
 
 /* 반응형 */
 @media (max-width:980px){
-  .left{left:6%;right:6%;top:16%;bottom:54%}
-  .right{left:6%;right:6%;top:52%;bottom:9%}
-  .hof{
-    grid-template-areas:
-      "first" "second" "third" "fourth" "fifth";
+  .parchment-inset{
+    left:6%; right:6%;
     grid-template-columns:1fr;
+    gap:12px;
   }
   .titles h1{font-size:28px}
   .mascot{width:56px}
   .auth-inline input{width:130px}
 }
-
-/* 내용이 길어져 카드 높이를 넘을 때 스크롤되게 하려면 필요 시 추가 */
-/* .left, .right{overflow:auto} */
