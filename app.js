@@ -55,14 +55,20 @@ async function refreshSessionUI(){
     document.getElementById('auth-form').style.display = 'none';
     document.getElementById('btn-logout').style.display = 'inline-block';
     $me.textContent = user.email || '로그인됨';
+
     await loadMe();
-    await loadTop5();
+    await loadTop5();          // 실제 데이터 렌더
   } else {
+    // 로그아웃이어도 기본 자리(윈둥자) 5칸 채워서 보이게
+    document.getElementById('auth-form').style.display = 'flex';
+    document.getElementById('btn-logout').style.display = 'none';
     $me.textContent = '';
+
+    renderTop5([]);            // ← 먼저 placeholder(윈둥자) 5칸
+    try { await loadTop5(); }  // ← 만약 RPC가 anon 허용이면 실제 데이터로 교체
+    catch(e){ /* 무시하고 placeholder 유지 */ }
   }
 }
-sb.auth.onAuthStateChange(()=>refreshSessionUI());
-refreshSessionUI();
 
 /* =======================
    내 전투력/출석 (보기전용)
