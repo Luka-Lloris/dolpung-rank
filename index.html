@@ -2,18 +2,18 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>The Wind — 길드관리</title>
+
+  <!-- 기존 레이아웃을 유지하기 위해 styles.css는 그대로 사용 -->
   <link rel="stylesheet" href="styles.css" />
+
   <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
   <div class="page">
-    <!-- 헤더 -->
+    <!-- ───────────────── Header ───────────────── -->
     <header class="topbar">
       <div class="brand">
         <img src="assets/윈둥이.png" alt="logo" class="logo" />
@@ -24,13 +24,16 @@
       </div>
 
       <div class="authbox">
+        <!-- 비로그인 -->
         <div id="authSignedOut" class="auth-row">
           <input id="email" type="email" placeholder="이메일" />
           <input id="password" type="password" placeholder="비밀번호" />
           <button id="loginBtn" class="btn">로그인</button>
-          <button id="signupBtn" class="btn ghost">회원가입</button>
+          <!-- **요구사항: '회원가입' 금지, '최초가입' 모달 버튼** -->
+          <button id="firstJoinBtn" class="btn ghost">최초가입</button>
         </div>
 
+        <!-- 로그인 -->
         <div id="authSignedIn" class="auth-row" style="display:none">
           <span id="whoami" class="pill"></span>
           <a id="adminLink" href="admin.html" class="btn ghost" style="display:none">관리자 메뉴</a>
@@ -39,11 +42,10 @@
       </div>
     </header>
 
-    <!-- 본문 -->
+    <!-- ───────────────── Main ───────────────── -->
     <main class="container">
-      <!-- 로그인 전 보드 -->
+      <!-- 로그인 전: 영상 + HOF(플레이스홀더) -->
       <section id="guestBoard" class="board">
-        <!-- 내 전투력 (영상) -->
         <div class="stats-card">
           <h3>내 전투력</h3>
           <div class="video-box">
@@ -51,7 +53,6 @@
           </div>
         </div>
 
-        <!-- 명예의 전당 (플레이스홀더) -->
         <div class="hof-card">
           <div class="hof-head">
             <h3>명예의 전당</h3>
@@ -64,9 +65,8 @@
         </div>
       </section>
 
-      <!-- 로그인 후 보드 -->
+      <!-- 로그인 후: 스탯 카드 + HOF -->
       <section id="authedBoard" class="board" style="display:none">
-        <!-- 내 전투력 (입력/표시) -->
         <div class="stats-card">
           <h3>내 전투력</h3>
 
@@ -114,7 +114,6 @@
           </div>
         </div>
 
-        <!-- 명예의 전당 -->
         <div class="hof-card">
           <div class="hof-head">
             <h3>명예의 전당</h3>
@@ -128,10 +127,46 @@
       </section>
     </main>
 
+    <!-- ───────────────── 최초가입 모달 (레이아웃 비침투, 전용 클래스) ───────────────── -->
+    <div id="firstJoinModal" class="tw-modal-overlay" style="display:none">
+      <div class="tw-modal" role="dialog" aria-modal="true" aria-labelledby="twModalTitle">
+        <div class="tw-modal-header">
+          <h3 id="twModalTitle">최초가입</h3>
+          <button id="twModalClose" class="tw-modal-close" aria-label="닫기">×</button>
+        </div>
+        <div class="tw-modal-body">
+          <div class="tw-field">
+            <label for="firstJoinEmail">이메일</label>
+            <input id="firstJoinEmail" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="tw-field">
+            <label for="firstJoinPassword">비밀번호</label>
+            <input id="firstJoinPassword" type="password" placeholder="8자 이상" />
+          </div>
+          <div class="tw-field">
+            <label for="firstJoinNickname">닉네임 (선택)</label>
+            <input id="firstJoinNickname" type="text" placeholder="게임 내 닉네임" />
+          </div>
+          <div class="tw-field">
+            <label for="firstJoinClass">클래스 (선택)</label>
+            <select id="firstJoinClass">
+              <option value="">선택 안함</option>
+            </select>
+          </div>
+          <p class="tw-help">메일 인증을 완료한 뒤, 운영진 승인 시 사용 가능합니다.</p>
+          <div id="firstJoinMsg" class="tw-msg"></div>
+        </div>
+        <div class="tw-modal-footer">
+          <button id="firstJoinSubmit" class="btn primary">가입 요청</button>
+        </div>
+      </div>
+    </div>
+    <!-- ─────────────────────────────────────────────────────── -->
+
     <footer class="footer"></footer>
   </div>
 
-  <!-- 환경설정: 프로젝트에 맞게 교체 -->
+  <!-- 환경설정: 프로젝트 값으로 교체 -->
   <script>
     window.__SB_URL__  = "https://YOUR-PROJECT.supabase.co";
     window.__SB_ANON__ = "YOUR-ANON-KEY";
