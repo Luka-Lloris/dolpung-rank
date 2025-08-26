@@ -29,6 +29,9 @@ const $meBP     = $('#me-bp');
 const $meNick   = $('#me-nick');
 const $meAttend = $('#me-attend');
 
+const $authArea = document.getElementById('auth-area');
+const $promo    = document.getElementById('promo');
+
 const $btnToggle = $('#btn-toggle-upsert');
 const $btnSave   = $('#btn-save');
 const $form      = $('#form-upsert');
@@ -39,26 +42,21 @@ const $board     = $('#hof-board');
 
 // ---------- 클래스 이미지 매핑 ----------
 const CLASS_IMG = {
-  '환영검사':'환영검사.png',
-  '심연추방자':'심연추방자.png',
-  '주문각인사':'주문각인사.png',
-  '집행관':'집행관.png',
-  '태양감시자':'태양감시자.png',
-  '향사수':'향사수.png'
+  '환영검사':'환영검사.png','심연추방자':'심연추방자.png','주문각인사':'주문각인사.png',
+  '집행관':'집행관.png','태양감시자':'태양감시자.png','향사수':'향사수.png'
 };
 const CLASS_FALLBACK = '윈둥자.png'; // 데이터 없을 때 placeholder
-
 const classImgPath = (label) => `assets/${CLASS_IMG[label] || CLASS_FALLBACK}`;
 const placeText = (n)=> n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
 
-// ---------- 공통 유틸 ----------
+// ---------- 유틸 ----------
 const num  = v => (v===''||v==null)?null:Number(v);
 const numf = v => (v===''||v==null)?null:Number(v);
 
 // ---------- 초기화 ----------
 init();
 function init(){
-  // 로그인 폼
+  // 로그인
   $authForm.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const { error } = await sb.auth.signInWithPassword({
@@ -69,9 +67,8 @@ function init(){
     await afterLogin();
   });
 
-  // 최초가입 버튼 → 모달 오픈 + 클래스 로드
+  // 최초가입 모달 열기
   $btnSignup.addEventListener('click', async ()=>{
-    // 입력값 프리필
     $suEmail.value = $email.value.trim();
     $suPass.value = $suPass2.value = '';
     $suNick.value = '';
@@ -86,17 +83,13 @@ function init(){
     else $dlg.removeAttribute('open');
   });
   // 모달 바깥 클릭 닫기
-  $dlg.addEventListener('click', (e)=>{
-    if (e.target === $dlg) $dlg.close();
-  });
+  $dlg.addEventListener('click', (e)=>{ if (e.target === $dlg) $dlg.close(); });
 
-  // 모달 가입 제출
+  // 가입 제출
   $suSubmit.addEventListener('click', handleSignup);
 
   // 카카오는 준비중
-  $btnKakao.addEventListener('click', ()=>{
-    alert('Kakao 로그인 기능은 준비 중입니다.');
-  });
+  $btnKakao.addEventListener('click', ()=> alert('Kakao 로그인 기능은 준비 중입니다.'));
 
   // 로그아웃
   $btnLogout.addEventListener('click', async ()=>{
@@ -110,10 +103,9 @@ function init(){
     $form.style.display = show ? 'block' : 'none';
     $btnSave.style.display = show ? 'inline-block' : 'none';
   });
-
   $btnSave.addEventListener('click', saveStats);
 
-  // 탭 전환
+  // 탭
   $tabs.addEventListener('click', (e)=>{
     if (e.target.tagName !== 'BUTTON') return;
     $$('.tabs button').forEach(b=>b.classList.remove('active'));
@@ -127,7 +119,7 @@ function init(){
   refreshSessionUI();
 }
 
-// ---------- 회원가입 처리 ----------
+// ---------- 회원가입 ----------
 async function handleSignup(){
   const email = $suEmail.value.trim();
   const pass  = $suPass.value;
@@ -138,34 +130,24 @@ async function handleSignup(){
   if (!email || !pass || !pass2 || !nick) return alert('모든 값을 입력해주세요.');
   if (pass !== pass2) return alert('비밀번호 확인이 일치하지 않습니다.');
 
-  // 1) auth signUp
   const { error: signErr } = await sb.auth.signUp({ email, password: pass });
   if (signErr) return alert('가입 실패: '+signErr.message);
 
-  // 2) 프로필 보장 + 업데이트(닉/클래스)
   await sb.rpc('ensure_profile').catch(()=>{});
   const { data:{ user } } = await sb.auth.getUser();
   if (user){
-    const { error: upErr } = await sb
-      .from('profiles')
-      .update({ nickname: nick, class_code: cls })
-      .eq('user_id', user.id);
-    if (upErr) return alert('프로필 업데이트 실패: '+upErr.message);
+    await sb.from('profiles').update({ nickname: nick, class_code: cls }).eq('user_id', user.id).catch(()=>{});
   }
 
-  // 모달 닫고 UI 새로고침
   if ($dlg.open) $dlg.close();
   await afterLogin(true);
   alert('가입 완료! 운영진 승인 후 랭킹에 반영됩니다.');
 }
 
-// ---------- 클래스 목록 주입 ----------
+// ---------- 클래스 목록 ----------
 async function loadClassCodes(){
-  // RLS 정책(cc_select_all using true) 적용되어 있어야 함
   const { data, error } = await sb.from('class_codes')
-    .select('code,label')
-    .eq('is_active', true)
-    .order('label', { ascending: true });
+    .select('code,label').eq('is_active', true).order('label', { ascending: true });
   $suClassSel.innerHTML = '<option value="">(선택)</option>';
   if (error) return;
   (data||[]).forEach(row=>{
@@ -176,27 +158,39 @@ async function loadClassCodes(){
   });
 }
 
-// ---------- 로그인 이후 공통 루틴 ----------
+// ---------- 로그인 이후 ----------
 async function afterLogin(){
-  // 프로필 보장(소셜/이메일 둘 다)
   await sb.rpc('ensure_profile').catch(()=>{});
   await refreshSessionUI();
 }
 
-// ---------- 세션 기반 UI ----------
+// ---------- 세션 UI 토글 ----------
 async function refreshSessionUI(){
   const { data:{ user } } = await sb.auth.getUser();
+
   if (user){
+    // 헤더
     $authForm.style.display = 'none';
     $btnLogout.style.display = 'inline-block';
     $meSpan.textContent = user.email || '로그인됨';
+
+    // 왼쪽 카드: 기능 보이기 / 영상 숨김
+    if ($authArea) $authArea.style.display = '';
+    if ($promo)    $promo.style.display = 'none';
+    const v = document.getElementById('promo-video'); if (v){ try{ v.pause(); }catch(_){} }
+
     await loadMe();
     await loadTop5();
   }else{
+    // 헤더
     $authForm.style.display = '';
     $btnLogout.style.display = 'none';
     $meSpan.textContent = '';
-    // 비로그인도 랭킹은 보이도록
+
+    // 왼쪽 카드: 기능 숨김 / 영상 노출
+    if ($authArea) $authArea.style.display = 'none';
+    if ($promo)    $promo.style.display = 'flex';
+
     await loadTop5();
   }
 }
@@ -254,30 +248,11 @@ let mode = 'total';
 
 async function loadTop5(){
   const { data, error } = await sb.rpc('rank_list_public', {
-    p_season: null, p_basis: mode, p_class_code: null, p_page: 1, p_page_size: 5
+    p_season:null, p_basis:mode, p_class_code:null, p_page:1, p_page_size:5
   });
   renderTop5(!error && Array.isArray(data) ? data : []);
 }
 
 function renderTop5(rows){
   $board.innerHTML = '';
-  const places = ['first','second','third','fourth','fifth'];
-
-  // 항상 5칸 → 부족한 건 placeholder
-  const items = Array.from({length:5}, (_,i)=> rows[i] ?? { nickname:'', class_label:null });
-
-  items.forEach((r,i)=>{
-    const div = document.createElement('div');
-    div.className = `hof-card ${places[i]}`;
-    const imgSrc = classImgPath(r.class_label);
-    div.innerHTML = `
-      <div class="place">${placeText(i+1)}</div>
-      <img alt="${r.class_label || 'placeholder'}">
-      <div class="name">${r.nickname || '&nbsp;'}</div>
-    `;
-    const img = div.querySelector('img');
-    img.src = imgSrc;
-    img.onerror = ()=>{ img.src = classImgPath(null); };
-    $board.appendChild(div);
-  });
-}
+  co
