@@ -1,27 +1,13 @@
-/* =============== 기본 =============== */
+/* 기본 */
 *{box-sizing:border-box}
-:root{
-  --bg:#000; --fg:#eee;
-  --panel:rgba(0,0,0,.22);
-  --border:rgba(255,255,255,.08);
-  --shadow:0 12px 40px rgba(0,0,0,.45);
-  --accent:#d6f58f;
-
-  /* 양피지 안쪽 여백(조절 쉬움) */
-  --inset-left:150px;
-  --inset-right:150px;
-  --inset-top:8%;
-  --inset-bottom:8%;
-}
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 img{max-width:100%;height:auto;display:block}
 
-/* =============== 헤더 =============== */
-.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000;gap:12px}
+/* 헤더 */
+.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #222;background:#000;position:sticky;top:0;z-index:10}
 .brand{display:flex;gap:10px;align-items:center}
 .mascot{width:72px;height:auto;transform:translateY(6px)}
-.titles h1{margin:0;font-size:36px;letter-spacing:.5px;color:var(--accent);text-shadow:0 0 10px rgba(214,245,143,.25)}
+.titles h1{margin:0;font-size:36px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
 .titles p{margin:2px 0 0;color:#ddd}
 
 .auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -32,140 +18,107 @@ button:hover{border-color:#5bd5ff}
 button.ghost{background:transparent}
 .social-logins{display:flex;gap:6px}
 .kakao{background:#FEE500;color:#000;border:0}
-.kakao.soon{opacity:.65;filter:grayscale(.2);cursor:not-allowed}
-.kakao.soon:hover{border-color:#333}
+.kakao.soon{cursor:not-allowed}
 
-/* =============== 무대/양피지 =============== */
+/* 무대/양피지 */
 .stage{display:flex;justify-content:center;padding:16px}
 .parchment{
   position:relative;
-  width:min(1580px,98vw);          /* 크게 보기 */
-  aspect-ratio:770/420;            /* bg.png 비율 */
+  width:min(1560px, 98vw);        /* 크게 */
+  aspect-ratio:770/420;           /* bg.png 비율 */
   margin:0 auto;
 }
 .parchment-bg{
   position:absolute; inset:0; width:100%; height:100%;
   object-fit:contain; pointer-events:none;
 }
-
-/* 양피지 안쪽 안전영역: 좌/우 150px + 상/하 퍼센트 */
+/* 말린 부분 제외하고 안쪽에 배치 */
 .parchment-inset{
-  position:absolute;
-  left:var(--inset-left); right:var(--inset-right);
-  top:var(--inset-top); bottom:var(--inset-bottom);
-  display:grid;
-  grid-template-columns:42% 58%;   /* 좌/우 비율 */
-  gap:24px;
-  min-height:0;
+  position:absolute; inset:0;
+  padding: 10% 150px 8%;          /* 상/좌우/하 */
 }
 
-/* =============== 카드 공통 =============== */
+/* 카드 영역 */
 .card{
-  position:relative;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:8px;
-  box-shadow:var(--shadow);
+  position:absolute; top:0; bottom:0;
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);
   padding:14px;
-  min-height:0;
 }
-.card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.3)}
-.left{grid-column:1}
-.right{grid-column:2; display:flex; flex-direction:column}
+.left{left:0; right:52%}
+.right{left:48%; right:0}
 
-/* =============== 내 전투력 패널 =============== */
+.card h2{margin:0 0 10px;color:#ffe85c;text-shadow:0 0 6px rgba(255,232,92,.3)}
+
+/* 내 전투력 패널 */
 .my-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
-.my-quick .stat{background:#e9f0f8;color:#111;border-radius:6px;padding:8px;text-align:center;border:1px solid #c7d5e2}
+.my-quick .stat{background:#e9f0f8;color:#111;border-radius:8px;padding:10px;text-align:center;border:1px solid #c7d5e2}
 .my-quick .label{display:block;font-size:12px;color:#333;margin-bottom:4px}
 .my-quick .value{font-size:18px;font-weight:700}
 .actions{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .actions .small{padding:6px 10px;font-size:12px}
 .grid{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
-.grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#f2f4f8;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#ddd}
 .grid input{padding:10px 12px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee}
-.attendance{margin-top:12px;color:#f2f4f8;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.attendance{margin-top:12px;color:#ddd}
 
-/* =============== 명예의 전당 =============== */
-.hall-head{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+/* 로그인 전 비디오 */
+.promo{margin-top:12px;display:flex;justify-content:center}
+.promo video{
+  width:450px;height:300px;max-width:100%;
+  aspect-ratio:3/2;background:#000;border:1px solid #333;border-radius:10px;
+  box-shadow:0 10px 24px rgba(0,0,0,.35);
+}
+
+/* 명예의 전당 */
+.hall-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .tabs{display:flex;gap:8px}
 .tabs button{padding:6px 10px}
 .tabs .active{border-color:#7fd3ff;box-shadow:0 0 0 1px #7fd3ff inset}
 
-/* 보드: 1st는 두 줄 차지, 절대 섹션을 넘지 않음 */
+/* Top5 보드 */
 .hof{
-  flex:1 1 auto;              /* .right 안에서 남은 높이 꽉 채움 */
-  min-height:0;
   display:grid;
-  grid-template-columns:1.35fr 1fr 1fr;  /* 1st 약간 더 넓게 */
-  grid-template-rows:repeat(2,1fr);      /* 위/아래 두 줄 동일 높이 */
-  gap:14px;
-  align-items:stretch;
+  grid-template-areas:
+    "first second third"
+    "first fourth fifth";
+  grid-template-columns:2fr 1.2fr 1.2fr;
+  gap:10px; align-items:end; height:100%;
 }
-.hof .first{grid-row:1 / span 2}         /* 1st가 두 줄 차지 */
+.hof-card{border:1px solid #444;background:#111;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.hof-card img{width:100%;border-radius:6px;object-fit:cover;aspect-ratio:3/4}
+.hof-card .name{font-weight:700}
+.hof-card .place{font-weight:900}
+.hof .first {grid-area:first}
+.hof .second{grid-area:second}
+.hof .third {grid-area:third}
+.hof .fourth{grid-area:fourth}
+.hof .fifth {grid-area:fifth}
 
-/* 카드: 셀 높이 100% 사용, 내부는 place / art / name */
-.hof-card{
-  height:100%;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
-  border:1px solid #444;background:#111;border-radius:10px;
-  padding:8px;gap:6px;overflow:hidden;
-}
-.hof-card .place{font-weight:900;text-align:center}
-.hof-card .name{font-weight:700;text-align:center}
-
-/* 3:4 비율 상자 + contain(비율 유지, 크롭 방지) */
-.hof-card .art{
-  width:100%;
-  aspect-ratio:3/4;
-  background:#0b0b0b;
-  border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;
-}
-.hof-card .art img{
-  max-width:100%;max-height:100%;
-  width:auto;height:auto;object-fit:contain;
-}
-
-/* =============== 반응형 =============== */
-@media (max-width:1180px){
-  .titles h1{font-size:30px}
-  .mascot{width:60px}
-}
-@media (max-width:980px){
-  .parchment-inset{
-    left:6%; right:6%;
-    grid-template-columns:1fr;
-    gap:12px;
-  }
-  .left,.right{grid-column:auto}
-  .auth-inline input{width:130px}
-  .hof{
-    grid-template-columns:1fr;
-    grid-template-rows:repeat(5, minmax(180px, 1fr));
-    gap:10px;
-  }
-  .hof .first{grid-row:auto}
-}
-
-
-/* ===== Signup Modal ===== */
-/* dialog 기본 */
+/* 모달 */
 .modal { border:0; padding:0; background:transparent; }
 .modal::backdrop { background: rgba(0,0,0,.6); }
 .modal-card {
-  width: min(420px, 92vw);
-  background:#111; color:#eee;
-  border:1px solid #333; border-radius:12px;
-  padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.6);
+  width: min(420px, 92vw); background:#111; color:#eee;
+  border:1px solid #333; border-radius:12px; padding:16px;
+  box-shadow:0 20px 50px rgba(0,0,0,.6);
 }
 .modal-card h3 { margin: 0 0 8px; }
 .modal-card label { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
 .modal-card input, .modal-card select {
-  padding:10px 12px; border-radius:10px;
-  border:1px solid #333; background:#0c0f16; color:#eee;
+  padding:10px 12px; border-radius:10px; border:1px solid #333; background:#0c0f16; color:#eee;
 }
 .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
-.kakao.soon { cursor:not-allowed; }
 
+/* 반응형 */
+@media (max-width:980px){
+  .parchment-inset{ padding: 10% 6% 8%; }
+  .left{left:0; right:0; bottom:54%}
+  .right{left:0; right:0; top:52%}
+  .hof{grid-template-areas:"first" "second" "third" "fourth" "fifth";grid-template-columns:1fr}
+  .titles h1{font-size:28px}
+  .mascot{width:56px}
+  .auth-inline input{width:130px}
+}
