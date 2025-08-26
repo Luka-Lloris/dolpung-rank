@@ -3,36 +3,274 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>관리자 메뉴</title>
+  <title>관리자 메뉴 | The Wind</title>
+
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* --- Admin page minimal add-on --- */
+    .page {max-width: 1100px; margin: 24px auto; padding: 0 14px;}
+    .admin-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    .admin-bar .who{opacity:.9}
+    .card-admin{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:16px}
+    .card-admin h2{margin:0 0 10px;color:#ffe85c}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+    .t-actions{display:flex;gap:8px;flex-wrap:wrap}
+    input[type="search"], select, .btn {
+      padding:9px 10px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee
+    }
+    .btn{cursor:pointer}
+    .btn.primary{background:#1a2030;border-color:#2a2f3a}
+    .btn:hover{border-color:#5bd5ff}
+    .notice{padding:10px;border:1px solid #333;background:#12161f;border-radius:10px;margin:8px 0;color:#cfe1ff}
+    .error{color:#ffb0b0}
+    .ok{color:#a5ffb6}
+    .muted{opacity:.8}
+    .right{display:flex;gap:8px;align-items:center}
+  </style>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="admin-page">
+<body>
   <header class="page-header">
-    <div class="brand"><h1>관리자 메뉴</h1></div>
-    <nav><a href="./">← 랭킹으로</a></nav>
+    <div class="brand">
+      <img src="assets/윈둥이.png" class="mascot" alt="윈둥이" />
+      <div class="titles">
+        <h1>관리자 메뉴</h1>
+        <p>가입 승인 · 열정등급 설정</p>
+      </div>
+    </div>
+    <div class="auth">
+      <a class="btn ghost" href="./">메인으로</a>
+      <span id="who" class="who"></span>
+      <button id="btn-logout" class="ghost">로그아웃</button>
+    </div>
   </header>
 
-  <main class="admin-wrap">
-    <section class="admin-card">
-      <h2>가입 승인 대기</h2>
-      <div id="pending-list" class="table"></div>
-    </section>
-
-    <section class="admin-card">
-      <h2>열정 등급 설정 (현재 시즌)</h2>
-      <div class="row">
-        <input id="search-nick" placeholder="닉네임 일부" />
-        <button id="btn-search">검색</button>
+  <main class="page" id="page" style="display:none">
+    <div class="admin-bar">
+      <div class="who" id="who2"></div>
+      <div class="right">
+        <span class="muted">현 시즌: <b id="season-label">-</b></span>
       </div>
-      <div id="search-result" class="table"></div>
-    </section>
+    </div>
+
+    <div class="grid2">
+      <!-- 가입 승인 -->
+      <section class="card-admin">
+        <h2>가입 승인</h2>
+        <div id="pending-empty" class="notice muted" style="display:none">대기 중인 가입이 없습니다.</div>
+        <table id="tbl-pending">
+          <thead>
+            <tr>
+              <th>닉네임</th>
+              <th>클래스</th>
+              <th>가입일</th>
+              <th style="width:240px">작업</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- 열정등급 -->
+      <section class="card-admin">
+        <h2>열정등급 설정</h2>
+        <div class="t-actions" style="margin-bottom:8px">
+          <input id="q" type="search" placeholder="닉네임 검색" />
+          <button class="btn primary" id="btn-search">검색</button>
+        </div>
+        <table id="tbl-grade">
+          <thead>
+            <tr>
+              <th>닉네임</th>
+              <th>운영진</th>
+              <th>현재 등급</th>
+              <th style="width:300px">변경</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
   </main>
 
+  <section id="gate" class="page" style="display:none">
+    <div class="notice error">
+      관리자 권한이 필요합니다. 운영진에게 권한 승인을 요청하세요.
+    </div>
+  </section>
+
   <script>
-    window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
-    window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
+    // ====== Supabase Env (메인 index와 동일하게 맞추세요) ======
+    window.__SB_URL__  = window.__SB_URL__  || "https://zxmihqapcemjmzoagpjm.supabase.co";
+    window.__SB_ANON__ = window.__SB_ANON__ || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
   </script>
-  <script src="admin.js"></script>
+  <script>
+    // ================= Core =================
+    const sb = supabase.createClient(window.__SB_URL__, window.__SB_ANON__);
+
+    const $who = document.getElementById('who');
+    const $who2 = document.getElementById('who2');
+    const $page = document.getElementById('page');
+    const $gate = document.getElementById('gate');
+    const $seasonLabel = document.getElementById('season-label');
+
+    const $tblPending = document.querySelector('#tbl-pending tbody');
+    const $pendingEmpty = document.getElementById('pending-empty');
+
+    const $q = document.getElementById('q');
+    const $btnSearch = document.getElementById('btn-search');
+    const $tblGrade = document.querySelector('#tbl-grade tbody');
+
+    document.getElementById('btn-logout').onclick = async () => {
+      await sb.auth.signOut(); location.href = './';
+    };
+
+    const GRADE_OPTIONS = [
+      {v:null, t:'일반 (100%)'},
+      {v:1, t:'1등급 (+9%)'},
+      {v:2, t:'2등급 (+7%)'},
+      {v:3, t:'3등급 (+5%)'},
+      {v:4, t:'4등급 (+3%)'},
+      {v:5, t:'5등급 (+1%)'},
+      {v:6, t:'6등급 (-1%)'},
+      {v:7, t:'7등급 (-3%)'},
+      {v:8, t:'8등급 (-5%)'},
+      {v:9, t:'9등급 (-7%)'},
+      {v:10,t:'10등급 (-9%)'}
+    ];
+    const gradeText = (g)=>{
+      const f = GRADE_OPTIONS.find(x=> String(x.v)===String(g) );
+      return f ? f.t : '일반 (100%)';
+    };
+
+    let CURR_SEASON = 1;
+
+    async function guard() {
+      const { data:{ user } } = await sb.auth.getUser();
+      if (!user){ location.href = './'; return; }
+
+      $who.textContent = user.email || '(unknown)';
+      // 내 프로필 읽기(셀프셀렉트 허용 정책)
+      const { data: me } = await sb.from('profiles').select('nickname,is_admin,approved').eq('user_id', user.id).maybeSingle();
+      $who2.textContent = `${me?.nickname||'(닉네임없음)'} · ${me?.is_admin?'운영진':'일반'} · ${me?.approved?'승인됨':'미승인'}`;
+
+      if (!me?.is_admin){
+        $gate.style.display='block';
+        return;
+      }
+      // 시즌 라벨
+      const { data: s } = await sb.from('seasons').select('id,label').order('id',{ascending:false}).limit(1);
+      CURR_SEASON = s?.[0]?.id || 1;
+      $seasonLabel.textContent = s?.[0]?.label ? `${s[0].label} (#${CURR_SEASON})` : `#${CURR_SEASON}`;
+
+      $page.style.display='block';
+      await refreshAll();
+    }
+
+    async function refreshAll(){
+      await loadPending();
+      await searchMembers();
+    }
+
+    // ========== 가입 승인 ==========
+    async function loadPending(){
+      $tblPending.innerHTML = '';
+      let ok = true;
+      const { data, error } = await sb.rpc('admin_list_pending');
+      if (error){ ok=false; console.error(error); }
+      const rows = data || [];
+      if (rows.length === 0){ $pendingEmpty.style.display='block'; return; }
+      $pendingEmpty.style.display='none';
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(r.nickname || '(닉네임없음)')}</td>
+          <td>${escapeHtml(r.class_code || '-')}</td>
+          <td class="muted">${formatDate(r.created_at)}</td>
+          <td>
+            <div class="t-actions">
+              <button class="btn primary" data-act="approve">승인</button>
+              <button class="btn" data-act="approve-admin">승인+운영진</button>
+            </div>
+          </td>
+        `;
+        tr.querySelector('[data-act="approve"]').onclick = ()=>approve(r.user_id,false,tr);
+        tr.querySelector('[data-act="approve-admin"]').onclick = ()=>approve(r.user_id,true,tr);
+        $tblPending.appendChild(tr);
+      });
+      return ok;
+    }
+
+    async function approve(userId, makeAdmin, tr){
+      const { error } = await sb.rpc('admin_approve_user', { p_user_id: userId, p_make_admin: makeAdmin });
+      if (error){ alert('승인 실패: '+error.message); return; }
+      tr.remove();
+      // 모두 비면 안내 보이기
+      if ($tblPending.children.length===0) $pendingEmpty.style.display='block';
+    }
+
+    // ========== 열정등급 ==========
+    $btnSearch.onclick = searchMembers;
+
+    async function searchMembers(){
+      const q = $q.value?.trim();
+      $tblGrade.innerHTML = '';
+      let query = sb.from('profiles').select('user_id,nickname,is_admin,approved').eq('approved', true);
+      if (q) query = query.ilike('nickname', `%${q}%`);
+      const { data, error } = await query.order('nickname',{ascending:true}).limit(100);
+      if (error){ console.error(error); return; }
+
+      for (const p of (data||[])){
+        const current = await getCurrentGrade(p.user_id);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(p.nickname || '(닉네임없음)')}</td>
+          <td>${p.is_admin?'Y':'-'}</td>
+          <td class="muted">${gradeText(current)}</td>
+          <td>
+            <div class="t-actions">
+              <select class="sel-grade">
+                ${GRADE_OPTIONS.map(opt=>`<option value="${opt.v??''}" ${String(opt.v)===String(current)?'selected':''}>${opt.t}</option>`).join('')}
+              </select>
+              <button class="btn primary">적용</button>
+            </div>
+          </td>
+        `;
+        const sel = tr.querySelector('.sel-grade');
+        tr.querySelector('.btn.primary').onclick = ()=> applyGrade(p.user_id, sel.value===''?null:Number(sel.value), tr);
+        $tblGrade.appendChild(tr);
+      }
+    }
+
+    async function getCurrentGrade(uid){
+      const { data, error } = await sb
+        .from('member_stats')
+        .select('evaluation_grade')
+        .eq('user_id', uid)
+        .eq('season', CURR_SEASON)
+        .maybeSingle();
+      if (error) return null;
+      return data?.evaluation_grade ?? null;
+    }
+
+    async function applyGrade(uid, grade, tr){
+      const { error } = await sb.rpc('admin_set_eval_grade', { p_user_id: uid, p_season: CURR_SEASON, p_grade: grade });
+      if (error){ alert('적용 실패: '+error.message); return; }
+      // 셀 텍스트 갱신
+      tr.children[2].textContent = gradeText(grade);
+    }
+
+    // ===== utils =====
+    function escapeHtml(s){ return (s??'').toString().replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function formatDate(s){ if(!s) return '-'; const d=new Date(s); return d.toLocaleString(); }
+
+    // kick
+    sb.auth.onAuthStateChange(()=>guard());
+    guard();
+  </script>
 </body>
 </html>
