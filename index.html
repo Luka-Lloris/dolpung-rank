@@ -18,6 +18,26 @@
       </div>
     </div>
 
+  <dialog id="dlg-signup" class="modal">
+    <form id="signup-form" method="dialog" class="modal-card">
+      <h3>회원가입</h3>
+      <label>이메일 <input type="email" id="su-email" required></label>
+      <label>비밀번호 <input type="password" id="su-pass" required></label>
+      <label>비밀번호 확인 <input type="password" id="su-pass2" required></label>
+      <label>닉네임 <input type="text" id="su-nick" maxlength="20" required></label>
+      <label>클래스
+        <select id="su-class">
+          <option value="">(선택)</option>
+        </select>
+      </label>
+      <p class="hint">가입 후 운영진 승인까지 랭킹 반영이 제한됩니다.</p>
+      <div class="modal-actions">
+        <button type="reset" value="cancel" class="ghost">취소</button>
+        <button type="button" id="su-submit">가입</button>
+      </div>
+    </form>
+  </dialog>
+
     <div class="auth">
       <form id="auth-form" class="auth-inline">
         <input type="email" id="auth-email" placeholder="이메일" required />
