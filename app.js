@@ -168,3 +168,37 @@ function renderTop5(rows){
   });
 }
 const placeText = (n)=> n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
+
+// 라벨 → 파일명 매핑 (없는 라벨도 자동 폴백)
+const CLASS_IMG = {
+  '환영검사':'환영검사.png','심연추방자':'심연추방자.png','주문각인사':'주문각인사.png',
+  '집행관':'집행관.png','태양감시자':'태양감시자.png','향사수':'향사수.png'
+};
+const CLASS_FALLBACK = '환영검사.png'; // 없으면 이걸로
+
+function classImgPath(label){
+  const file = CLASS_IMG[label] || CLASS_FALLBACK;
+  return `assets/${file}`;
+}
+
+function renderTop5(rows){
+  const board = document.getElementById('hof-board');
+  board.innerHTML = '';
+  const places = ['first','second','third','fourth','fifth'];
+
+  rows.slice(0,5).forEach((r,i)=>{
+    const div = document.createElement('div');
+    div.className = `hof-card ${places[i]||'first'}`;
+    const imgSrc = classImgPath(r.class_label);
+    div.innerHTML = `
+      <div class="place">${placeText(i+1)}</div>
+      <img alt="${r.class_label||''}">
+      <div class="name">${r.nickname || '(익명)'}</div>
+    `;
+    const img = div.querySelector('img');
+    img.src = imgSrc;
+    img.onerror = ()=>{ img.src = `assets/${CLASS_FALLBACK}` }; // 파일 누락 시 폴백
+    board.appendChild(div);
+  });
+}
+
