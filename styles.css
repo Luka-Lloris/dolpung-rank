@@ -24,8 +24,8 @@ button.ghost{background:transparent}
 .stage{display:flex;justify-content:center;padding:16px}
 .parchment{
   position:relative;
-  width:min(1200px, 96vw);
-  aspect-ratio: 770 / 420;   /* bg.png 비율 */
+  width:min(1560px, 98vw);   /* ← 원래 1200px 이었음 */
+  aspect-ratio: 770 / 420;   /* bg.png 비율 그대로 */
   margin:0 auto;
 }
 .parchment-bg{
@@ -36,9 +36,15 @@ button.ghost{background:transparent}
 /* 안쪽 레이아웃 */
 .card{
   position:absolute; top:16%; bottom:9%;
-  background:rgba(255,255,255,0.03);
-  border:1px solid rgba(0,0,0,.35); backdrop-filter:blur(0.4px);
+  background:rgba(0,0,0,.22);            /* ← 더 어둡게, 글자 잘 보이게 */
+  border:1px solid rgba(255,255,255,.08);
   border-radius:8px;
+  box-shadow:0 12px 40px rgba(0,0,0,.45); /* 살짝 띄워 보이게 */
+}
+
+.grid label, .attendance, .hall-head h2 { 
+  color:#f2f4f8; 
+  text-shadow:0 1px 2px rgba(0,0,0,.6);
 }
 .left{left:6%; right:56%; padding:14px}
 .right{left:46%; right:6%;  padding:14px}
