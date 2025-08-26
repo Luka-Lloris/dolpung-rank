@@ -36,7 +36,7 @@
             required
           />
           <button type="submit" id="btn-signin">로그인</button>
-          <button type="button" id="btn-signup" class="ghost">회원가입</button>
+          <button type="button" id="btn-signup" class="ghost">최초가입</button>
         </form>
 
         <!-- 소셜(카카오는 준비중 안내만) -->
@@ -51,39 +51,39 @@
       </div>
     </header>
 
-    <!-- =================== 회원가입 모달 =================== -->
+    <!-- =================== 최초가입 모달 =================== -->
     <dialog id="dlg-signup" class="modal">
       <form id="signup-form" method="dialog" class="modal-card">
-        <h3>회원가입</h3>
+        <h3>최초가입</h3>
 
         <label>
-          이메일
+          이메일 주소를 알려주세요
           <input type="email" id="su-email" required />
         </label>
 
         <label>
-          비밀번호
+          비밀번호가 필요합니다
           <input type="password" id="su-pass" required />
         </label>
 
         <label>
-          비밀번호 확인
+          비밀번호 확인이 필요합니다
           <input type="password" id="su-pass2" required />
         </label>
 
         <label>
-          닉네임
+          스탠더님의 닉네임
           <input type="text" id="su-nick" maxlength="20" required />
         </label>
 
         <label>
-          클래스
+          주 클래스를 선택해주세요
           <select id="su-class">
             <option value="">(선택)</option>
           </select>
         </label>
 
-        <p class="hint">가입 후 운영진 승인까지 랭킹 반영이 제한됩니다.</p>
+        <p class="hint">가입 후 운영진 승인까지 기능 사용 및 랭킹 반영이 제한됩니다.</p>
 
         <div class="modal-actions">
           <button type="reset" value="cancel" class="ghost">취소</button>
