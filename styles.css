@@ -148,3 +148,22 @@ button.ghost{background:transparent}
   }
   .hof .first{grid-row:auto}
 }
+
+
+/* ===== Signup Modal ===== */
+.modal::backdrop{ background:rgba(0,0,0,.6) }
+.modal{ border:0; padding:0; background:transparent }
+.modal-card{
+  width:min(420px, 92vw);
+  background:#0e1016; color:#eee; border:1px solid #333; border-radius:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  padding:16px; display:flex; flex-direction:column; gap:10px;
+}
+.modal-card h3{ margin:0 0 6px; font-size:20px }
+.modal-card label{ display:flex; flex-direction:column; gap:6px; font-size:14px }
+.modal-card input, .modal-card select{
+  padding:10px 12px; border-radius:10px; border:1px solid #333; background:#0c0f16; color:#eee;
+}
+.modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:8px }
+.modal-card .hint{ margin:4px 0 0; opacity:.8; font-size:12px }
+
