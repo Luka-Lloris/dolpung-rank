@@ -1,120 +1,217 @@
+// ---------- Supabase ----------
 const sb = supabase.createClient(window.__SB_URL__, window.__SB_ANON__);
 
-/* ========= AUTH ========= */
-const $formAuth  = document.getElementById('auth-form');
-const $email     = document.getElementById('auth-email');
-const $pass      = document.getElementById('auth-pass');
-const $btnSignup = document.getElementById('btn-signup');
-const $btnLogout = document.getElementById('btn-logout');
-const $btnKakao  = document.getElementById('btn-login-kakao');
-const $me        = document.getElementById('me');
+// ---------- DOM 헬퍼 ----------
+const $ = (sel, p = document) => p.querySelector(sel);
+const $$ = (sel, p = document) => [...p.querySelectorAll(sel)];
 
-$formAuth.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const { error } = await sb.auth.signInWithPassword({
-    email: $email.value.trim(),
-    password: $pass.value
+// ---------- 엘리먼트 캐시 ----------
+const $authForm   = $('#auth-form');
+const $email      = $('#auth-email');
+const $pass       = $('#auth-pass');
+const $btnSignup  = $('#btn-signup');
+const $btnLogout  = $('#btn-logout');
+const $btnKakao   = $('#btn-login-kakao');
+const $meSpan     = $('#me');
+
+const $dlg        = $('#dlg-signup');
+const $suEmail    = $('#su-email');
+const $suPass     = $('#su-pass');
+const $suPass2    = $('#su-pass2');
+const $suNick     = $('#su-nick');
+const $suClassSel = $('#su-class');
+const $suSubmit   = $('#su-submit');
+const $suCancel   = $('#dlg-signup .ghost');
+
+const $meRankBP = $('#me-rank-bp');
+const $meLevel  = $('#me-level');
+const $meBP     = $('#me-bp');
+const $meNick   = $('#me-nick');
+const $meAttend = $('#me-attend');
+
+const $btnToggle = $('#btn-toggle-upsert');
+const $btnSave   = $('#btn-save');
+const $form      = $('#form-upsert');
+const $saveMsg   = $('#save-msg');
+
+const $tabs      = $('.tabs');
+const $board     = $('#hof-board');
+
+// ---------- 클래스 이미지 매핑 ----------
+const CLASS_IMG = {
+  '환영검사':'환영검사.png',
+  '심연추방자':'심연추방자.png',
+  '주문각인사':'주문각인사.png',
+  '집행관':'집행관.png',
+  '태양감시자':'태양감시자.png',
+  '향사수':'향사수.png'
+};
+const CLASS_FALLBACK = '윈둥자.png'; // 데이터 없을 때 placeholder
+
+const classImgPath = (label) => `assets/${CLASS_IMG[label] || CLASS_FALLBACK}`;
+const placeText = (n)=> n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
+
+// ---------- 공통 유틸 ----------
+const num  = v => (v===''||v==null)?null:Number(v);
+const numf = v => (v===''||v==null)?null:Number(v);
+
+// ---------- 초기화 ----------
+init();
+function init(){
+  // 로그인 폼
+  $authForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const { error } = await sb.auth.signInWithPassword({
+      email: $email.value.trim(),
+      password: $pass.value
+    });
+    if (error) return alert('로그인 실패: '+error.message);
+    await afterLogin();
   });
-  if (error) return alert('로그인 실패: ' + error.message);
-  await afterLogin();
-});
 
-// 회원가입: 모달 열기
-$btnSignup.addEventListener('click', async ()=>{
-  await loadClassOptionsForSignup();
-  document.getElementById('dlg-signup').showModal();
-});
+  // 최초가입 버튼 → 모달 오픈 + 클래스 로드
+  $btnSignup.addEventListener('click', async ()=>{
+    // 입력값 프리필
+    $suEmail.value = $email.value.trim();
+    $suPass.value = $suPass2.value = '';
+    $suNick.value = '';
+    await loadClassCodes();
+    if (typeof $dlg.showModal === 'function') $dlg.showModal();
+    else $dlg.setAttribute('open','');
+  });
 
-// 가입 제출
-document.getElementById('su-submit').addEventListener('click', async ()=>{
-  const em  = document.getElementById('su-email').value.trim();
-  const pw1 = document.getElementById('su-pass').value;
-  const pw2 = document.getElementById('su-pass2').value;
-  const nick= document.getElementById('su-nick').value.trim();
-  const cls = document.getElementById('su-class').value || null;
+  // 모달 취소
+  $suCancel.addEventListener('click', ()=>{
+    if ($dlg.open) $dlg.close();
+    else $dlg.removeAttribute('open');
+  });
+  // 모달 바깥 클릭 닫기
+  $dlg.addEventListener('click', (e)=>{
+    if (e.target === $dlg) $dlg.close();
+  });
 
-  if (!em || !pw1 || !pw2 || !nick) return alert('모든 필드를 채워주세요.');
-  if (pw1 !== pw2) return alert('비밀번호 확인이 일치하지 않습니다.');
+  // 모달 가입 제출
+  $suSubmit.addEventListener('click', handleSignup);
 
-  // 1) Auth 가입
-  const { data:su, error:errSign } = await sb.auth.signUp({ email:em, password:pw1 });
-  if (errSign) return alert('가입 실패: '+errSign.message);
+  // 카카오는 준비중
+  $btnKakao.addEventListener('click', ()=>{
+    alert('Kakao 로그인 기능은 준비 중입니다.');
+  });
 
-  // 2) 프로필 보장 후 닉/클래스 저장 (본인만 업데이트 허용 RLS)
+  // 로그아웃
+  $btnLogout.addEventListener('click', async ()=>{
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  // 스탯 폼 토글/저장
+  $btnToggle.addEventListener('click', ()=>{
+    const show = $form.style.display === 'none';
+    $form.style.display = show ? 'block' : 'none';
+    $btnSave.style.display = show ? 'inline-block' : 'none';
+  });
+
+  $btnSave.addEventListener('click', saveStats);
+
+  // 탭 전환
+  $tabs.addEventListener('click', (e)=>{
+    if (e.target.tagName !== 'BUTTON') return;
+    $$('.tabs button').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    mode = e.target.dataset.tab;
+    loadTop5();
+  });
+
+  // 세션 감시
+  sb.auth.onAuthStateChange((_e)=>refreshSessionUI());
+  refreshSessionUI();
+}
+
+// ---------- 회원가입 처리 ----------
+async function handleSignup(){
+  const email = $suEmail.value.trim();
+  const pass  = $suPass.value;
+  const pass2 = $suPass2.value;
+  const nick  = $suNick.value.trim();
+  const cls   = $suClassSel.value || null;
+
+  if (!email || !pass || !pass2 || !nick) return alert('모든 값을 입력해주세요.');
+  if (pass !== pass2) return alert('비밀번호 확인이 일치하지 않습니다.');
+
+  // 1) auth signUp
+  const { error: signErr } = await sb.auth.signUp({ email, password: pass });
+  if (signErr) return alert('가입 실패: '+signErr.message);
+
+  // 2) 프로필 보장 + 업데이트(닉/클래스)
   await sb.rpc('ensure_profile').catch(()=>{});
   const { data:{ user } } = await sb.auth.getUser();
   if (user){
-    await sb.from('profiles').update({ nickname:nick, class_code:cls })
-      .eq('user_id', user.id).select().single().catch(()=>{});
+    const { error: upErr } = await sb
+      .from('profiles')
+      .update({ nickname: nick, class_code: cls })
+      .eq('user_id', user.id);
+    if (upErr) return alert('프로필 업데이트 실패: '+upErr.message);
   }
 
-  // 3) 안내 후 닫기
-  document.getElementById('dlg-signup').close();
-  alert('가입 신청 완료! 운영진 승인 대기 중입니다.');
-  await afterLogin(); // 로그인 상태면 화면 갱신
-});
+  // 모달 닫고 UI 새로고침
+  if ($dlg.open) $dlg.close();
+  await afterLogin(true);
+  alert('가입 완료! 운영진 승인 후 랭킹에 반영됩니다.');
+}
 
-// 클래스 목록 로딩
-async function loadClassOptionsForSignup(){
-  const sel = document.getElementById('su-class');
-  sel.innerHTML = '<option value="">(선택)</option>';
-  const { data } = await sb.from('class_codes')
-    .select('code,label').eq('is_active', true).order('label', { ascending:true });
-  (data||[]).forEach(r=>{
-    const o = document.createElement('option');
-    o.value = r.code; o.textContent = r.label;
-    sel.appendChild(o);
+// ---------- 클래스 목록 주입 ----------
+async function loadClassCodes(){
+  // RLS 정책(cc_select_all using true) 적용되어 있어야 함
+  const { data, error } = await sb.from('class_codes')
+    .select('code,label')
+    .eq('is_active', true)
+    .order('label', { ascending: true });
+  $suClassSel.innerHTML = '<option value="">(선택)</option>';
+  if (error) return;
+  (data||[]).forEach(row=>{
+    const opt = document.createElement('option');
+    opt.value = row.code;
+    opt.textContent = row.label;
+    $suClassSel.appendChild(opt);
   });
 }
 
-
-// Kakao: 준비중 (리다이렉트 막음)
-$btnKakao.addEventListener('click', (e)=>{
-  e.preventDefault();
-  // 안내만, 아무 동작 없음
-});
-
-$btnLogout.addEventListener('click', async ()=>{
-  await sb.auth.signOut();
-  location.reload();
-});
-
+// ---------- 로그인 이후 공통 루틴 ----------
 async function afterLogin(){
+  // 프로필 보장(소셜/이메일 둘 다)
   await sb.rpc('ensure_profile').catch(()=>{});
   await refreshSessionUI();
 }
 
+// ---------- 세션 기반 UI ----------
 async function refreshSessionUI(){
   const { data:{ user } } = await sb.auth.getUser();
   if (user){
-    await sb.rpc('ensure_profile').catch(()=>{});
-    document.getElementById('auth-form').style.display='none';
-    document.getElementById('btn-logout').style.display='inline-block';
-    $me.textContent = user.email || '로그인됨';
+    $authForm.style.display = 'none';
+    $btnLogout.style.display = 'inline-block';
+    $meSpan.textContent = user.email || '로그인됨';
     await loadMe();
-    renderTop5([]);      // 먼저 placeholder
-    await loadTop5();    // 실제 데이터로 교체
-  } else {
-    document.getElementById('auth-form').style.display='flex';
-    document.getElementById('btn-logout').style.display='none';
-    $me.textContent = '';
-    renderTop5([]);      // 로그아웃도 자리 채우기
-    loadTop5().catch(()=>{}); // anon 권한 없으면 placeholder 유지
+    await loadTop5();
+  }else{
+    $authForm.style.display = '';
+    $btnLogout.style.display = 'none';
+    $meSpan.textContent = '';
+    // 비로그인도 랭킹은 보이도록
+    await loadTop5();
   }
 }
-sb.auth.onAuthStateChange(()=>refreshSessionUI());
-refreshSessionUI();
 
-/* ========= 내 전투력/출석 ========= */
-const $meRankBP = document.getElementById('me-rank-bp');
-const $meLevel  = document.getElementById('me-level');
-const $meBP     = document.getElementById('me-bp');
-const $meNick   = document.getElementById('me-nick');
-const $meAttend = document.getElementById('me-attend');
-
+// ---------- 내 정보/스탯 ----------
 async function loadMe(){
   const { data, error } = await sb.from('v_my_rank_current').select('*').maybeSingle();
-  if (error || !data) return;
+  if (error || !data){ 
+    $meRankBP.textContent = '-';
+    $meLevel.textContent  = '-';
+    $meBP.textContent     = '-';
+    $meNick.textContent   = '스탠더';
+    $meAttend.textContent = 0;
+    return;
+  }
   $meRankBP.textContent = data.rank_total_by_battle_power ?? '-';
   $meLevel.textContent  = data.level ?? '-';
   $meBP.textContent     = data.battle_power ?? '-';
@@ -123,38 +220,6 @@ async function loadMe(){
   fillForm(data);
 }
 
-/* ========= 스탯 업데이트(출석 제외) ========= */
-const $btnToggle = document.getElementById('btn-toggle-upsert');
-const $btnSave   = document.getElementById('btn-save');
-const $form      = document.getElementById('form-upsert');
-const $saveMsg   = document.getElementById('save-msg');
-
-$btnToggle.addEventListener('click', ()=>{
-  const show = $form.style.display === 'none';
-  $form.style.display    = show ? 'block' : 'none';
-  $btnSave.style.display = show ? 'inline-block' : 'none';
-});
-
-$btnSave.addEventListener('click', async ()=>{
-  const fd = new FormData($form);
-  const body = {
-    p_season     : null,
-    p_level      : num(fd.get('level')),
-    p_attack     : num(fd.get('attack')),
-    p_defence    : num(fd.get('defence')),
-    p_accuracy   : num(fd.get('accuracy')),
-    p_memory_pct : numf(fd.get('memory_pct')),
-    p_subjugate  : num(fd.get('subjugate')),
-    p_attend     : null // 출석은 운영진만
-  };
-  const { error } = await sb.rpc('self_upsert_stats', body);
-  if (error){ $saveMsg.textContent = '저장 실패'; return; }
-  $saveMsg.textContent = '저장 완료';
-  await loadMe(); await loadTop5();
-});
-
-const num  = v => (v===''||v==null) ? null : Number(v);
-const numf = v => (v===''||v==null) ? null : Number(v);
 function fillForm(d){
   $form.level.value      = d.level ?? '';
   $form.attack.value     = d.attack ?? '';
@@ -164,42 +229,42 @@ function fillForm(d){
   $form.subjugate.value  = d.subjugate ?? '';
 }
 
-/* ========= 명예의 전당 Top5 ========= */
-const CLASS_IMG = {
-  '환영검사':'환영검사.png','심연추방자':'심연추방자.png','주문각인사':'주문각인사.png',
-  '집행관':'집행관.png','태양감시자':'태양감시자.png','향사수':'향사수.png'
-};
-const CLASS_FALLBACK = '윈둥자.png';   // placeholder
-
-function classImgPath(label){
-  const file = CLASS_IMG[label] || CLASS_FALLBACK;
-  return `assets/${file}`;
+async function saveStats(){
+  const fd = new FormData($form);
+  const body = {
+    p_season: null,
+    p_level: num(fd.get('level')),
+    p_attack: num(fd.get('attack')),
+    p_defence: num(fd.get('defence')),
+    p_accuracy: num(fd.get('accuracy')),
+    p_memory_pct: numf(fd.get('memory_pct')),
+    p_subjugate: num(fd.get('subjugate')),
+    p_attend: null // 출석은 운영진만
+  };
+  const { error } = await sb.rpc('self_upsert_stats', body);
+  if (error){ $saveMsg.textContent = '저장 실패'; return; }
+  $saveMsg.textContent = '저장 완료';
+  await loadMe(); 
+  await loadTop5();
+  setTimeout(()=>{ $saveMsg.textContent=''; }, 2000);
 }
 
+// ---------- 랭킹 Top5 ----------
 let mode = 'total';
-const $tabs = document.querySelector('.tabs');
-$tabs.addEventListener('click',(e)=>{
-  if (e.target.tagName !== 'BUTTON') return;
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  mode = e.target.dataset.tab;  // 'total' | 'bp'
-  loadTop5();
-});
 
 async function loadTop5(){
   const { data, error } = await sb.rpc('rank_list_public', {
-    p_season:null, p_basis:mode, p_class_code:null, p_page:1, p_page_size:5
+    p_season: null, p_basis: mode, p_class_code: null, p_page: 1, p_page_size: 5
   });
-  renderTop5(!error && Array.isArray(data) ? data : []); // 에러/무데이터 → placeholder 유지
+  renderTop5(!error && Array.isArray(data) ? data : []);
 }
 
 function renderTop5(rows){
-  const board = document.getElementById('hof-board');
-  board.innerHTML = '';
+  $board.innerHTML = '';
   const places = ['first','second','third','fourth','fifth'];
 
-  // 항상 5칸 생성, 모자라면 placeholder
-  const items = Array.from({length:5}, (_, i) => rows[i] ?? { nickname:'', class_label:null });
+  // 항상 5칸 → 부족한 건 placeholder
+  const items = Array.from({length:5}, (_,i)=> rows[i] ?? { nickname:'', class_label:null });
 
   items.forEach((r,i)=>{
     const div = document.createElement('div');
@@ -207,14 +272,12 @@ function renderTop5(rows){
     const imgSrc = classImgPath(r.class_label);
     div.innerHTML = `
       <div class="place">${placeText(i+1)}</div>
-      <div class="art"><img alt="${r.class_label || 'placeholder'}"></div>
+      <img alt="${r.class_label || 'placeholder'}">
       <div class="name">${r.nickname || '&nbsp;'}</div>
     `;
-    const img = div.querySelector('.art img');
+    const img = div.querySelector('img');
     img.src = imgSrc;
     img.onerror = ()=>{ img.src = classImgPath(null); };
-    board.appendChild(div);
+    $board.appendChild(div);
   });
 }
-
-const placeText = n => n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
