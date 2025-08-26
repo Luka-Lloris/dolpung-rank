@@ -1,69 +1,81 @@
-// ─────────────────────────────────────────────────────────────
 // Supabase
-// ─────────────────────────────────────────────────────────────
 const supabase = window.supabase.createClient(window.__SB_URL__, window.__SB_ANON__);
 const $ = (s) => document.querySelector(s);
 const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? "-"; };
 const toInt = (v) => (v === "" || v === null || v === undefined) ? 0 : parseInt(v, 10);
 const toNum = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v);
 
-// ─────────────────────────────────────────────────────────────
-// Auth 상태 반영
-// ─────────────────────────────────────────────────────────────
-async function reflectSession() {
+// 세션 반영
+supabase.auth.onAuthStateChange(() => reflect());
+reflect();
+
+async function reflect() {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
     $("#authSignedOut").style.display = "flex";
     $("#authSignedIn").style.display = "none";
-    $("#authedBoard").style.display = "none";
-    $("#guestBoard").style.display = "grid";
-    renderHofPlaceholders("hofGuest");
+    $("#guestPanel").style.display = "flex";
+    $("#mePanel").style.display = "none";
+    renderHofPlaceholders("hof");
     return;
   }
 
   $("#authSignedOut").style.display = "none";
   $("#authSignedIn").style.display = "flex";
-  $("#guestBoard").style.display = "none";
-  $("#authedBoard").style.display = "grid";
+  $("#guestPanel").style.display = "none";
+  $("#mePanel").style.display = "block";
   $("#whoami").textContent = session.user.email;
 
+  // 프로필 생성 보장
   await supabase.rpc("ensure_profile").catch(()=>{});
 
-  const { data: profile } = await supabase
+  // 관리자 토글
+  const { data: me } = await supabase
     .from("profiles")
-    .select("is_admin, approved")
+    .select("is_admin,nickname,class_code")
     .eq("user_id", session.user.id)
     .single();
+  document.getElementById("adminLink").style.display = (me?.is_admin) ? "inline-block" : "none";
 
-  document.getElementById("adminLink").style.display = (profile?.is_admin) ? "inline-block" : "none";
+  // 최초가입 때 입력받은 닉/클래스 자동 반영(이메일 인증 후 처음 로그인 순간)
+  try {
+    const pending = JSON.parse(localStorage.getItem("tw_firstjoin") || "null");
+    if (pending && (!me?.nickname || !me?.class_code)) {
+      const upd = {};
+      if (!me?.nickname && pending.nickname) upd.nickname = pending.nickname;
+      if (!me?.class_code && pending.class_code) upd.class_code = pending.class_code;
+      if (Object.keys(upd).length) {
+        await supabase.from("profiles").update(upd).eq("user_id", session.user.id);
+      }
+      localStorage.removeItem("tw_firstjoin");
+    }
+  } catch (_) {}
 
   await renderMine();
   await renderTop5("bp");
 }
 
-// ─────────────────────────────────────────────────────────────
-// HOF
-// ─────────────────────────────────────────────────────────────
+// HOF 플레이스홀더
 function renderHofPlaceholders(targetId) {
   const wrap = document.getElementById(targetId);
-  const ph = () => `<div class="card"><img src="assets/윈둥자.png" alt="placeholder"></div>`;
   wrap.innerHTML = `
-    <div class="card big"><img src="assets/윈둥자.png" alt="placeholder"></div>
-    ${ph()}${ph()}${ph()}${ph()}
+    <div class="hof-card first"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
+    <div class="hof-card second"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
+    <div class="hof-card third"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
+    <div class="hof-card fourth"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
+    <div class="hof-card fifth"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
   `;
 }
 
+// HOF 데이터 렌더 (왼쪽 1st + 오른쪽 2×2)
 async function renderTop5(basis = "bp") {
   const wrap = document.getElementById("hof");
-  if (!wrap) return;
-
   const { data, error } = await supabase.rpc("rank_list_public", {
-    p_season: null,      // current
-    p_basis: basis,      // 'bp' | 'total'
+    p_season: null,
+    p_basis: basis,     // 'bp' | 'total'
     p_class_code: null,
-    p_page: 1,
-    p_page_size: 5
+    p_page: 1, p_page_size: 5
   });
 
   if (error || !data || data.length === 0) {
@@ -71,44 +83,42 @@ async function renderTop5(basis = "bp") {
     return;
   }
 
-  const cardImg = () => `<img src="assets/윈둥이.png" alt="rank">`;
-  const first = data[0];
-  const rest = data.slice(1);
+  const draw = (slot, row) => `
+    <div class="hof-card ${slot}">
+      <img src="assets/윈둥이.png" alt="">
+      <div class="name">${escapeHTML(row?.nickname ?? "-")}</div>
+    </div>`;
 
-  wrap.innerHTML = `
-    <div class="card big">${cardImg(first)}</div>
-    ${rest.map(cardImg).map(html => `<div class="card">${html}</div>`).join("")}
-  `;
+  wrap.innerHTML = [
+    draw("first",  data[0]),
+    draw("second", data[1]),
+    draw("third",  data[2]),
+    draw("fourth", data[3]),
+    draw("fifth",  data[4])
+  ].join("");
 }
 
-// ─────────────────────────────────────────────────────────────
-// 내 스탯/랭크/출석
-// ─────────────────────────────────────────────────────────────
+// 내 스탯/저장
 async function renderMine() {
-  const { data: my } = await supabase
-    .from("v_my_rank_current")
-    .select("*")
-    .maybeSingle();
+  const { data: my } = await supabase.from("v_my_rank_current").select("*").maybeSingle();
 
   setText("rank", my?.rank_total_by_battle_power ?? "-");
   setText("levelLabel", my?.level ?? "-");
   setText("bpLabel", my?.battle_power ?? "-");
 
-  document.getElementById("level").value      = my?.level        ?? 0;
-  document.getElementById("attack").value     = my?.attack       ?? 0;
-  document.getElementById("defence").value    = my?.defence      ?? 0;
-  document.getElementById("accuracy").value   = my?.accuracy     ?? 0;
-  document.getElementById("memory_pct").value = my?.memory_pct   ?? 0;
-  document.getElementById("subjugate").value  = my?.subjugate    ?? 0;
+  document.getElementById("level").value      = my?.level ?? 0;
+  document.getElementById("attack").value     = my?.attack ?? 0;
+  document.getElementById("defence").value    = my?.defence ?? 0;
+  document.getElementById("accuracy").value   = my?.accuracy ?? 0;
+  document.getElementById("memory_pct").value = my?.memory_pct ?? 0;
+  document.getElementById("subjugate").value  = my?.subjugate ?? 0;
 
   const n = my?.attend ?? 0;
-  document.getElementById("attendLine").textContent =
-    `이번 시즌 스탠더님은...\n${n}회 출석 중입니다.`;
+  document.getElementById("attendLine").textContent = `이번 시즌 스탠더님은...\n${n}회 출석 중입니다.`;
 }
 
 async function saveStats() {
   $("#saveResult").textContent = "저장 중...";
-
   const payload = {
     p_season: null,
     p_level: toInt(document.getElementById("level").value),
@@ -119,126 +129,83 @@ async function saveStats() {
     p_subjugate: toInt(document.getElementById("subjugate").value),
     p_attend: null
   };
-
   const { error } = await supabase.rpc("self_upsert_stats", payload);
-
-  if (error) {
-    $("#saveResult").textContent = `실패: ${error.message}`;
-    console.error(error);
-    return;
-  }
-
+  if (error) { $("#saveResult").textContent = `실패: ${error.message}`; console.error(error); return; }
   $("#saveResult").textContent = "저장 완료!";
-  await renderMine();
-  await renderTop5("bp");
+  await renderMine(); await renderTop5("bp");
 }
 
-// ─────────────────────────────────────────────────────────────
 // 최초가입 모달
-// ─────────────────────────────────────────────────────────────
+const dlg = document.getElementById("firstJoinModal");
+document.getElementById("firstJoinBtn").addEventListener("click", openFirstJoin);
+document.getElementById("firstJoinClose").addEventListener("click", () => dlg.close());
+document.getElementById("firstJoinSubmit").addEventListener("click", submitFirstJoin);
+document.getElementById("loginBtn").addEventListener("click", login);
+document.getElementById("logoutBtn").addEventListener("click", async () => { await supabase.auth.signOut(); });
+document.getElementById("saveStats").addEventListener("click", saveStats);
+document.getElementById("tabScore").addEventListener("click", async () => { 
+  document.getElementById("tabScore").classList.add("active");
+  document.getElementById("tabTotal").classList.remove("active");
+  await renderTop5("bp");
+});
+document.getElementById("tabTotal").addEventListener("click", async () => { 
+  document.getElementById("tabTotal").classList.add("active");
+  document.getElementById("tabScore").classList.remove("active");
+  await renderTop5("total");
+});
+
 function openFirstJoin() {
-  $("#firstJoinModal").style.display = "block";
-  $("#firstJoinMsg").textContent = "";
-  // 클래스 목록 로드
+  document.getElementById("firstJoinMsg").textContent = "";
+  dlg.showModal();
   loadClassCodes();
-}
-function closeFirstJoin() {
-  $("#firstJoinModal").style.display = "none";
 }
 
 async function loadClassCodes() {
-  const sel = $("#firstJoinClass");
-  if (!sel) return;
-  // 한 번 채웠으면 다시 안 채움
+  const sel = document.getElementById("firstJoinClass");
   if (sel.dataset.loaded === "1") return;
-
-  const { data, error } = await supabase
-    .from("class_codes")
-    .select("code,label")
-    .eq("is_active", true)
-    .order("label");
-
+  const { data, error } = await supabase.from("class_codes").select("code,label").eq("is_active", true).order("label");
   if (!error && Array.isArray(data)) {
-    for (const row of data) {
+    data.forEach(r => {
       const opt = document.createElement("option");
-      opt.value = row.code;
-      opt.textContent = row.label || row.code;
+      opt.value = r.code; opt.textContent = r.label || r.code;
       sel.appendChild(opt);
-    }
+    });
     sel.dataset.loaded = "1";
   }
 }
 
 async function submitFirstJoin() {
-  const email = $("#firstJoinEmail").value.trim();
-  const pw    = $("#firstJoinPassword").value;
-  const nickname = $("#firstJoinNickname").value.trim();
-  const classCode = $("#firstJoinClass").value || null;
+  const email = document.getElementById("firstJoinEmail").value.trim();
+  const pw1   = document.getElementById("firstJoinPassword").value;
+  const pw2   = document.getElementById("firstJoinPassword2").value;
+  const nickname = document.getElementById("firstJoinNickname").value.trim();
+  const classCode = document.getElementById("firstJoinClass").value;
 
-  if (!email || !pw) {
-    $("#firstJoinMsg").textContent = "이메일/비밀번호를 입력해 주세요.";
+  if (!email || !pw1 || !pw2 || !nickname || !classCode) {
+    document.getElementById("firstJoinMsg").textContent = "모든 항목을 입력해 주세요.";
+    return;
+  }
+  if (pw1 !== pw2) {
+    document.getElementById("firstJoinMsg").textContent = "비밀번호가 일치하지 않습니다.";
     return;
   }
 
-  $("#firstJoinMsg").textContent = "요청 중...";
+  document.getElementById("firstJoinMsg").textContent = "요청 중...";
 
-  // 1) supabase auth signUp
-  const { error: sErr } = await supabase.auth.signUp({
-    email, password: pw
-    // (필요 시) options: { emailRedirectTo: location.origin }
-  });
-  if (sErr) {
-    $("#firstJoinMsg").textContent = `실패: ${sErr.message}`;
-    return;
-  }
+  const { error } = await supabase.auth.signUp({ email, password: pw1 });
+  if (error) { document.getElementById("firstJoinMsg").textContent = `실패: ${error.message}`; return; }
 
-  // 2) 안내 문구 (메일 인증 후 관리자 승인)
-  $("#firstJoinMsg").textContent = "가입 요청 완료. 메일 인증 후 운영진 승인을 기다려주세요.";
+  // 로그인 후 자동 반영하도록 임시 저장
+  localStorage.setItem("tw_firstjoin", JSON.stringify({ nickname, class_code: classCode }));
+  document.getElementById("firstJoinMsg").textContent = "가입 요청 완료. 메일 인증 후 운영진 승인을 기다려주세요.";
 }
 
-// ─────────────────────────────────────────────────────────────
-// 이벤트 바인딩 & 부트
-// ─────────────────────────────────────────────────────────────
-function bindEvents() {
-  // 로그인
-  $("#loginBtn").addEventListener("click", async () => {
-    const email = $("#email").value.trim();
-    const password = $("#password").value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
-  });
-
-  // 로그아웃
-  $("#logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-  });
-
-  // 스탯 저장
-  $("#saveStats").addEventListener("click", saveStats);
-
-  // HOF 탭
-  $("#tabScore").addEventListener("click", async () => {
-    $("#tabScore").classList.add("on");
-    $("#tabTotal").classList.remove("on");
-    await renderTop5("bp");
-  });
-  $("#tabTotal").addEventListener("click", async () => {
-    $("#tabTotal").classList.add("on");
-    $("#tabScore").classList.remove("on");
-    await renderTop5("total");
-  });
-
-  // 최초가입 모달
-  $("#firstJoinBtn").addEventListener("click", openFirstJoin);
-  $("#twModalClose").addEventListener("click", closeFirstJoin);
-  $("#firstJoinModal").addEventListener("click", (e) => {
-    if (e.target.id === "firstJoinModal") closeFirstJoin();
-  });
-  $("#firstJoinSubmit").addEventListener("click", submitFirstJoin);
-
-  // 세션 변경 반영
-  supabase.auth.onAuthStateChange(() => reflectSession());
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) alert(error.message);
 }
 
-bindEvents();
-reflectSession();
+// util
+function escapeHTML(s){return String(s??"").replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'}[c]))}
