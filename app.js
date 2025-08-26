@@ -1,18 +1,21 @@
 const sb = supabase.createClient(window.__SB_URL__, window.__SB_ANON__);
 
 // ----- Auth -----
-const $formAuth = document.getElementById('auth-form');
-const $email = document.getElementById('auth-email');
-const $pass = document.getElementById('auth-pass');
+const $formAuth  = document.getElementById('auth-form');
+const $email     = document.getElementById('auth-email');
+const $pass      = document.getElementById('auth-pass');
 const $btnSignup = document.getElementById('btn-signup');
 const $btnLogout = document.getElementById('btn-logout');
-const $btnKakao = document.getElementById('btn-login-kakao');
-const $me = document.getElementById('me');
+const $btnKakao  = document.getElementById('btn-login-kakao');
+const $me        = document.getElementById('me');
 
 $formAuth.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const { error } = await sb.auth.signInWithPassword({ email:$email.value.trim(), password:$pass.value });
-  if (error) return alert('로그인 실패: '+error.message);
+  const { error } = await sb.auth.signInWithPassword({
+    email: $email.value.trim(),
+    password: $pass.value
+  });
+  if (error) return alert('로그인 실패: ' + error.message);
   await afterLogin();
 });
 
@@ -20,15 +23,15 @@ $btnSignup.addEventListener('click', async ()=>{
   const email = $email.value.trim(), password = $pass.value;
   if (!email || !password) return alert('이메일/비밀번호 입력');
   const { error } = await sb.auth.signUp({ email, password });
-  if (error) return alert('가입 실패: '+error.message);
+  if (error) return alert('가입 실패: ' + error.message);
   await afterLogin(true);
   alert('가입 완료!');
 });
 
 $btnKakao.addEventListener('click', async ()=>{
   await sb.auth.signInWithOAuth({
-    provider:'kakao',
-    options:{ redirectTo: window.location.href }
+    provider: 'kakao',
+    options: { redirectTo: window.location.href }
   });
 });
 
@@ -38,81 +41,82 @@ $btnLogout.addEventListener('click', async ()=>{
 });
 
 async function afterLogin(callEnsure=false){
-  if (callEnsure){
-    // 프로필 자동 생성
-    await sb.rpc('ensure_profile').catch(()=>{});
-  }else{
-    // 소셜 로그인 등에도 보장
-    await sb.rpc('ensure_profile').catch(()=>{});
-  }
+  // 프로필 자동 생성 (idempotent)
+  await sb.rpc('ensure_profile').catch(()=>{});
   await refreshSessionUI();
 }
 
 async function refreshSessionUI(){
-  const { data:{ user } } = await sb.auth.getUser();
+  const { data: { user } } = await sb.auth.getUser();
   if (user){
-    document.getElementById('auth-form').style.display='none';
-    document.getElementById('btn-logout').style.display='inline-block';
+    // 소셜 로그인 리다이렉트로 들어온 경우를 대비해 여기서도 보장
+    await sb.rpc('ensure_profile').catch(()=>{});
+
+    document.getElementById('auth-form').style.display = 'none';
+    document.getElementById('btn-logout').style.display = 'inline-block';
     $me.textContent = user.email || '로그인됨';
+
     await loadMe();
     await loadTop5();
   }else{
-    $me.textContent='';
+    $me.textContent = '';
   }
 }
-sb.auth.onAuthStateChange((_e)=>refreshSessionUI());
+sb.auth.onAuthStateChange(()=>refreshSessionUI());
 refreshSessionUI();
 
 // ----- 내 전투력/출석 -----
 const $meRankBP = document.getElementById('me-rank-bp');
-const $meLevel = document.getElementById('me-level');
-const $meBP = document.getElementById('me-bp');
-const $meNick = document.getElementById('me-nick');
+const $meLevel  = document.getElementById('me-level');
+const $meBP     = document.getElementById('me-bp');
+const $meNick   = document.getElementById('me-nick');
 const $meAttend = document.getElementById('me-attend');
 
 async function loadMe(){
   const { data, error } = await sb.from('v_my_rank_current').select('*').maybeSingle();
-  if (error || !data){ return; }
+  if (error || !data) return;
+
   $meRankBP.textContent = data.rank_total_by_battle_power ?? '-';
-  $meLevel.textContent = data.level ?? '-';
-  $meBP.textContent = data.battle_power ?? '-';
-  $meNick.textContent = data.nickname ?? '스탠더';
+  $meLevel.textContent  = data.level ?? '-';
+  $meBP.textContent     = data.battle_power ?? '-';
+  $meNick.textContent   = data.nickname ?? '스탠더';
   $meAttend.textContent = data.attend ?? 0;
-  // 폼에 현재값 채워두기
+
   fillForm(data);
 }
 
-// 스탯 업데이트 토글/저장
+// 스탯 업데이트 토글/저장 (출석은 폼 없음 = 운영진 전용)
 const $btnToggle = document.getElementById('btn-toggle-upsert');
-const $btnSave = document.getElementById('btn-save');
-const $form = document.getElementById('form-upsert');
-const $saveMsg = document.getElementById('save-msg');
+const $btnSave   = document.getElementById('btn-save');
+const $form      = document.getElementById('form-upsert');
+const $saveMsg   = document.getElementById('save-msg');
 
 $btnToggle.addEventListener('click', ()=>{
   const show = $form.style.display === 'none';
-  $form.style.display = show ? 'block' : 'none';
+  $form.style.display   = show ? 'block' : 'none';
   $btnSave.style.display = show ? 'inline-block' : 'none';
 });
 
 $btnSave.addEventListener('click', async ()=>{
   const fd = new FormData($form);
   const body = {
-    p_season: null,
-    p_level: num(fd.get('level')),
-    p_attack: num(fd.get('attack')),
-    p_defence: num(fd.get('defence')),
-    p_accuracy: num(fd.get('accuracy')),
-    p_memory_pct: numf(fd.get('memory_pct')),
-    p_subjugate: num(fd.get('subjugate')),
-    p_attend: null // 출석은 운영진만
+    p_season     : null,
+    p_level      : num(fd.get('level')),
+    p_attack     : num(fd.get('attack')),
+    p_defence    : num(fd.get('defence')),
+    p_accuracy   : num(fd.get('accuracy')),
+    p_memory_pct : numf(fd.get('memory_pct')),
+    p_subjugate  : num(fd.get('subjugate')),
+    p_attend     : null   // 출석은 운영진만
   };
   const { error } = await sb.rpc('self_upsert_stats', body);
   if (error){ $saveMsg.textContent = '저장 실패'; return; }
   $saveMsg.textContent = '저장 완료';
   await loadMe(); await loadTop5();
 });
-const num  = v => (v===''||v==null)?null:Number(v);
-const numf = v => (v===''||v==null)?null:Number(v);
+
+const num  = v => (v===''||v==null) ? null : Number(v);
+const numf = v => (v===''||v==null) ? null : Number(v);
 function fillForm(d){
   $form.level.value      = d.level ?? '';
   $form.attack.value     = d.attack ?? '';
@@ -124,61 +128,39 @@ function fillForm(d){
 
 // ----- 명예의 전당 Top5 (총점/전투력 탭) -----
 const CLASS_IMG = {
-  // 라벨 → 파일명 (assets/ 안)
-  '환영검사':'환영검사.png',
-  '심연추방자':'심연추방자.png',
-  '주문각인사':'주문각인사.png',
-  '집행관':'집행관.png',
-  '태양감시자':'태양감시자.png',
-  '향사수':'향사수.png'
+  '환영검사':'환영검사.png','심연추방자':'심연추방자.png','주문각인사':'주문각인사.png',
+  '집행관':'집행관.png','태양감시자':'태양감시자.png','향사수':'향사수.png'
 };
+const CLASS_FALLBACK = '환영검사.png';
+
+function classImgPath(label){
+  const file = CLASS_IMG[label] || CLASS_FALLBACK;
+  return `assets/${file}`;
+}
 
 let mode = 'total';
 const $tabs = document.querySelector('.tabs');
 $tabs.addEventListener('click',(e)=>{
-  if (e.target.tagName!=='BUTTON') return;
+  if (e.target.tagName !== 'BUTTON') return;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
   e.target.classList.add('active');
-  mode = e.target.dataset.tab;
+  mode = e.target.dataset.tab;  // 'total' | 'bp'
   loadTop5();
 });
 
 async function loadTop5(){
   const { data, error } = await sb.rpc('rank_list_public', {
-    p_season:null, p_basis:mode, p_class_code:null, p_page:1, p_page_size:5
+    p_season: null,
+    p_basis: mode,
+    p_class_code: null,
+    p_page: 1,
+    p_page_size: 5
   });
-  if (error){ document.getElementById('hof-board').innerHTML = '<p>조회 오류</p>'; return; }
+  if (error){
+    document.getElementById('hof-board').innerHTML = '<p>조회 오류</p>';
+    return;
+  }
   renderTop5(data || []);
-}
-
-function renderTop5(rows){
-  const board = document.getElementById('hof-board');
-  board.innerHTML = '';
-  const places = ['first','second','third','fourth','fifth'];
-  rows.slice(0,5).forEach((r,i)=>{
-    const div = document.createElement('div');
-    div.className = `hof-card ${places[i]||'first'}`;
-    const imgFile = CLASS_IMG[r.class_label] || '환영검사.png';
-    div.innerHTML = `
-      <div class="place">${placeText(i+1)}</div>
-      <img src="assets/${imgFile}" alt="${r.class_label||''}" />
-      <div class="name">${r.nickname || '(익명)'}</div>
-    `;
-    board.appendChild(div);
-  });
-}
-const placeText = (n)=> n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
-
-// 라벨 → 파일명 매핑 (없는 라벨도 자동 폴백)
-const CLASS_IMG = {
-  '환영검사':'환영검사.png','심연추방자':'심연추방자.png','주문각인사':'주문각인사.png',
-  '집행관':'집행관.png','태양감시자':'태양감시자.png','향사수':'향사수.png'
-};
-const CLASS_FALLBACK = '환영검사.png'; // 없으면 이걸로
-
-function classImgPath(label){
-  const file = CLASS_IMG[label] || CLASS_FALLBACK;
-  return `assets/${file}`;
 }
 
 function renderTop5(rows){
@@ -197,8 +179,9 @@ function renderTop5(rows){
     `;
     const img = div.querySelector('img');
     img.src = imgSrc;
-    img.onerror = ()=>{ img.src = `assets/${CLASS_FALLBACK}` }; // 파일 누락 시 폴백
+    img.onerror = ()=>{ img.src = classImgPath(); }; // 파일 누락 시 폴백
     board.appendChild(div);
   });
 }
 
+const placeText = n => n===1?'1st':n===2?'2nd':n===3?'3rd':n===4?'4th':'5th';
