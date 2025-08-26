@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
-  <!-- 헤더: 기존 클래스명 유지 -->
+  <!-- 헤더 -->
   <header class="page-header">
     <div class="brand">
       <img class="mascot" src="assets/윈둥이.png" alt="logo" />
@@ -23,21 +23,20 @@
       <div id="authSignedOut" class="auth-inline">
         <input id="email" type="email" placeholder="이메일" />
         <input id="password" type="password" placeholder="비밀번호" />
-        <button id="loginBtn">로그인</button>
-        <!-- ‘회원가입’ 금지 → ‘최초가입’ 모달 -->
-        <button id="firstJoinBtn" class="ghost">최초가입</button>
+        <button id="loginBtn" class="btn">로그인</button>
+        <button id="firstJoinBtn" class="btn ghost">최초가입</button>
       </div>
 
       <!-- 로그인 -->
       <div id="authSignedIn" class="auth-inline" style="display:none">
         <span id="whoami" class="pill">-</span>
-        <a id="adminLink" href="admin.html" class="ghost" style="display:none">관리자 메뉴</a>
-        <button id="logoutBtn">로그아웃</button>
+        <a id="adminLink" href="admin.html" class="btn ghost" style="display:none">관리자 메뉴</a>
+        <button id="logoutBtn" class="btn danger">로그아웃</button>
       </div>
     </div>
   </header>
 
-  <!-- 본문: 두루마리 레이아웃 유지 -->
+  <!-- 본문 -->
   <main class="stage">
     <section class="parchment">
       <img class="parchment-bg" src="assets/bg.png" alt="" />
@@ -58,11 +57,11 @@
               <div class="stat"><span class="label">레벨</span><span id="levelLabel" class="value">-</span></div>
               <div class="stat"><span class="label">전투력</span><span id="bpLabel" class="value">-</span></div>
             </div>
-            <div style="font-size:12px;opacity:.85;margin:2px 0 8px">
+            <div class="small dim">
               <b>스탯 업데이트</b> 저장 버튼을 누르기 전까지는 반영되지 않습니다.
             </div>
 
-            <div class="grid" id="statsGrid">
+            <div class="grid stats-grid">
               <label>레벨
                 <input id="level" type="number" min="0" />
               </label>
@@ -86,7 +85,7 @@
             <div id="attendLine" class="attendance"></div>
 
             <div class="actions">
-              <button id="saveStats">저장</button>
+              <button id="saveStats" class="btn primary">저장</button>
               <span id="saveResult" class="small"></span>
             </div>
           </div>
@@ -97,19 +96,19 @@
           <div class="hall-head">
             <h2>명예의 전당</h2>
             <div class="tabs">
-              <button id="tabScore" class="active">전투력부문</button>
-              <button id="tabTotal">종점부문</button>
+              <button id="tabScore" class="chip on">전투력부문</button>
+              <button id="tabTotal" class="chip">종점부문</button>
             </div>
           </div>
 
-          <!-- 요청한 분할(왼쪽 1st + 오른쪽 2x2) 렌더 타깃 -->
-          <div class="hof" id="hof"></div>
+          <!-- 왼쪽 1st + 오른쪽 2x2 -->
+          <div id="hof" class="hof"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- 최초가입 모달: 문구/필수조건 반영 -->
+  <!-- 최초가입 모달 -->
   <dialog id="firstJoinModal" class="modal">
     <div class="modal-card">
       <h3>최초가입</h3>
@@ -136,15 +135,15 @@
         </select>
       </label>
 
-      <div id="firstJoinMsg" style="font-size:13px;opacity:.9"></div>
+      <div id="firstJoinMsg" class="small"></div>
       <div class="modal-actions">
-        <button id="firstJoinSubmit">가입 요청</button>
-        <button id="firstJoinClose" class="ghost">닫기</button>
+        <button id="firstJoinSubmit" class="btn primary">가입 요청</button>
+        <button id="firstJoinClose" class="btn ghost">닫기</button>
       </div>
     </div>
   </dialog>
 
-  <!-- 환경값 교체 -->
+  <!-- Supabase 환경값: 프로젝트 키로 교체 -->
   <script>
     window.__SB_URL__  = "https://YOUR-PROJECT.supabase.co";
     window.__SB_ANON__ = "YOUR-ANON-KEY";
