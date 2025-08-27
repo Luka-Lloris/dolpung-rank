@@ -10,8 +10,9 @@ const toInt = (v) => (v === "" || v === null || v === undefined) ? 0 : parseInt(
 const toNum = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v);
 const escapeHTML = (s)=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-// 현재 HOF 기준('bp' | 'total')
+// 상태
 let hofBasis = "bp";
+let CURRENT_SEASON = null;
 
 // ---------- Auth Flow ----------
 supabase.auth.onAuthStateChange((_evt, _session) => reflect());
@@ -38,32 +39,29 @@ async function reflect() {
     $("#mePanel").style.display       = "block";
     $("#whoami").textContent          = session.user.email;
 
-    // 프로필 보장 (예외 무시)
+    // 프로필 보장 (오류 무시)
     try { await supabase.rpc("ensure_profile"); } catch (_) {}
 
-    // 관리자 여부 & 최초가입 메타 적용
-    const { data: me } = await supabase
-      .from("profiles")
-      .select("is_admin,nickname,class_code")
-      .eq("user_id", session.user.id)
-      .single();
-
-    document.getElementById("adminLink").style.display = (me?.is_admin) ? "inline-block" : "none";
-
+    // 관리자 링크 노출 로직
+    let isAdmin = false;
     try {
-      const pending = JSON.parse(localStorage.getItem("tw_firstjoin") || "null");
-      if (pending && (!me?.nickname || !me?.class_code)) {
-        const upd = {};
-        if (!me?.nickname && pending.nickname) upd.nickname = pending.nickname;
-        if (!me?.class_code && pending.class_code) upd.class_code = pending.class_code;
-        if (Object.keys(upd).length) {
-          await supabase.from("profiles").update(upd).eq("user_id", session.user.id);
-        }
-        localStorage.removeItem("tw_firstjoin");
-      }
-    } catch {}
+      const { data: me, error } = await supabase
+        .from("profiles")
+        .select("is_admin,nickname,class_code")
+        .eq("user_id", session.user.id)
+        .single();
+      if (error) throw error;
+      isAdmin = !!me?.is_admin;
+    } catch (e) {
+      // RLS 등으로 실패 시 관리자 전용 RPC를 호출해 권한 체크
+      try {
+        const { error: adminErr } = await supabase.rpc("admin_list_pending");
+        if (!adminErr) isAdmin = true;
+      } catch {}
+    }
+    document.getElementById("adminLink").style.display = isAdmin ? "inline-block" : "none";
 
-    await renderMine();
+    await renderMine();         // 이 안에서 CURRENT_SEASON을 셋업
     await renderTop5(hofBasis);
   } catch (e) {
     console.error("reflect() failed:", e);
@@ -121,6 +119,8 @@ async function renderMine() {
     const { data: my, error } = await supabase.from("v_my_rank_current").select("*").maybeSingle();
     if (error) throw error;
 
+    CURRENT_SEASON = my?.season ?? CURRENT_SEASON;
+
     setText("rank",        my?.rank_total_by_battle_power ?? "-");
     setText("levelLabel",  my?.level ?? "-");
     setText("bpLabel",     my?.battle_power ?? "-");
@@ -139,20 +139,30 @@ async function renderMine() {
   }
 }
 
+async function ensureSeason() {
+  if (CURRENT_SEASON) return CURRENT_SEASON;
+  try {
+    const { data } = await supabase.from("v_my_rank_current").select("season").maybeSingle();
+    CURRENT_SEASON = data?.season ?? null;
+  } catch {}
+  return CURRENT_SEASON;
+}
+
 async function saveStats() {
   const result = $("#saveResult");
   result.textContent = "저장 중...";
 
   try {
+    const season = await ensureSeason(); // ← 반드시 시즌 값을 채워서 전달
     const payload = {
-      p_season: null,
+      p_season:     season, // null이면 일부 스키마에서 오류 → 최대한 채워 넣음
       p_level:      toInt(document.getElementById("level").value),
       p_attack:     toInt(document.getElementById("attack").value),
       p_defence:    toInt(document.getElementById("defence").value),
       p_accuracy:   toInt(document.getElementById("accuracy").value),
       p_memory_pct: toNum(document.getElementById("memory_pct").value),
       p_subjugate:  toInt(document.getElementById("subjugate").value),
-      p_attend:     null  // 일반 유저 무시됨
+      p_attend:     null  // 일반 유저는 무시됨
     };
 
     const { error } = await supabase.rpc("self_upsert_stats", payload);
@@ -163,7 +173,6 @@ async function saveStats() {
     console.error("saveStats failed:", e);
     result.textContent = "실패: " + (e?.message ?? e);
   } finally {
-    // 뷰/랭킹 최신화는 성공/실패와 무관하게 시도
     await renderMine();
     await renderTop5(hofBasis);
   }
@@ -204,10 +213,7 @@ async function submitFirstJoin() {
   const classCode = document.getElementById("firstJoinClass").value;
   const msg = document.getElementById("firstJoinMsg");
 
-  if (!email || !pw1 || !pw2 || !nickname || !classCode) {
-    msg.textContent = "모든 항목을 입력해 주세요.";
-    return;
-  }
+  if (!email || !pw1 || !pw2 || !nickname || !classCode) { msg.textContent = "모든 항목을 입력해 주세요."; return; }
   if (pw1 !== pw2) { msg.textContent = "비밀번호가 일치하지 않습니다."; return; }
 
   msg.textContent = "요청 중...";
@@ -238,14 +244,14 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
         "- Additional Redirect URLs / Logout URLs 동일하게 추가",
         "- __SB_URL__/__SB_ANON__ 값 확인"
       ].join("\n"));
-    } else {
-      alert(msg);
-    }
+    } else { alert(msg); }
   }
 });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   try { await supabase.auth.signOut(); } catch (e) { console.error(e); }
+  // 일부 환경에서 onAuthStateChange가 지연/유실되는 문제 대비
+  await reflect();
 });
 
 document.getElementById("firstJoinBtn").addEventListener("click", openFirstJoin);
