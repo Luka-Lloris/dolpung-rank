@@ -4,12 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>The Wind — 길드관리</title>
-  <link rel="stylesheet" href="./styles.css?v=full-restore" />
-  <!-- Supabase v2 -->
+  <link rel="stylesheet" href="./styles.css?v=fix-auth-hof-2" />
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- 헤더 -->
   <header class="topbar">
     <div class="brand">
       <img class="logo" src="./assets/윈둥이.png" alt="logo" />
@@ -19,7 +17,6 @@
       </div>
     </div>
 
-    <!-- 로그인 바 (버튼 + 엔터 모두 동작) -->
     <form id="authForm" class="auth-bar" autocomplete="on">
       <input id="email" name="email" type="email" placeholder="이메일" required />
       <input id="password" name="password" type="password" placeholder="비밀번호" required />
@@ -30,26 +27,21 @@
       <button type="button" class="kakao yellow" disabled>카카오 로그인 (준비중)</button>
     </form>
 
-    <!-- 관리자 메뉴 링크 (로그인 + is_admin=true일 때 노출) -->
     <nav class="admin-nav">
       <a id="adminLink" href="./admin.html" style="display:none">관리자 메뉴</a>
     </nav>
   </header>
 
-  <!-- 배경 양피지 안쪽 컨테이너 -->
   <main class="paper">
-    <!-- 좌: 내 전투력 -->
     <section class="panel left">
       <h2>내 전투력</h2>
 
-      <!-- 로그인 전: 영상 -->
       <div id="videoWrap" class="video-outer">
         <div class="video-keep32">
           <video src="./assets/wind_strike.mp4" muted autoplay loop playsinline></video>
         </div>
       </div>
 
-      <!-- 로그인 후: 스탯 카드 + 입력 -->
       <div id="statsWrap" class="stats-wrap" style="display:none">
         <div class="badges">
           <div class="badge">
@@ -60,6 +52,109 @@
           <div class="badge">
             <div class="label">레벨</div>
             <div id="levelBadge" class="value">-</div>
+            <div class="hint">스탯 업데이트</div>
+          </div>
+          <div class="badge">
+            <div class="label">전투력</div>
+            <div id="bpBadge" class="value">-</div>
+            <div class="hint">저장 버튼을 눌러주세요.</div>
+          </div>
+        </div>
+
+        <form id="statsForm" class="grid12">
+          <label class="cell span6">
+            <span>레벨</span>
+            <input id="level" name="level" type="number" inputmode="numeric" />
+          </label>
+          <label class="cell span6">
+            <span>공격</span>
+            <input id="attack" name="attack" type="number" inputmode="numeric" />
+          </label>
+          <label class="cell span6">
+            <span>방어</span>
+            <input id="defence" name="defence" type="number" inputmode="numeric" />
+          </label>
+          <label class="cell span6">
+            <span>명중</span>
+            <input id="accuracy" name="accuracy" type="number" inputmode="numeric" />
+          </label>
+          <label class="cell span6">
+            <span>기억%</span>
+            <input id="memory_pct" name="memory_pct" type="number" step="0.01" />
+          </label>
+          <label class="cell span6">
+            <span>토벌</span>
+            <input id="subjugate" name="subjugate" type="number" inputmode="numeric" />
+          </label>
+
+          <div class="cell span12 actions">
+            <button type="submit" class="primary">저장</button>
+            <span id="saveNote" class="note"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel right">
+      <div class="panel-head">
+        <h2>명예의 전당</h2>
+        <div class="segment">
+          <button id="tab-bp" class="seg on">전투력부문</button>
+          <button id="tab-total" class="seg">종합부문</button>
+        </div>
+      </div>
+
+      <div id="hofWrap" class="hof-root"></div>
+    </section>
+  </main>
+
+  <dialog id="signupModal" class="modal">
+    <form method="dialog" class="modal-body" id="signupForm">
+      <h3>최초가입</h3>
+
+      <label><span>스탠더님이 우편을 받으실 메일 주소를 알려주세요.</span>
+        <input id="su_email" type="email" required />
+      </label>
+
+      <label><span>아무도 모를만한 비밀번호를 입력해주세요.</span>
+        <input id="su_pw" type="password" minlength="8" required />
+      </label>
+
+      <label><span>비밀번호를 다시 확인해주세요.</span>
+        <input id="su_pw2" type="password" minlength="8" required />
+      </label>
+
+      <label><span>스탠더님의 닉네임을 알려주세요.</span>
+        <input id="su_nick" type="text" placeholder="게임 내 닉네임" />
+      </label>
+
+      <label><span>내 클래스는...</span>
+        <select id="su_class">
+          <option value="">클래스를 선택해주시기 바랍니다.</option>
+          <option value="illusion_swordsman">환영검사</option>
+          <option value="abyss_banisher">심연추방자</option>
+          <option value="spell_engraver">주문각인사</option>
+          <option value="executor">집행관</option>
+          <option value="sun_sentinel">태양감시자</option>
+          <option value="aroma_archer">향사수</option>
+        </select>
+      </label>
+
+      <div class="modal-actions">
+        <button id="signupDo" type="submit" class="primary">가입 요청</button>
+        <button type="button" id="signupClose">닫기</button>
+      </div>
+      <p class="help">가입 후 운영진 승인이 필요합니다.</p>
+    </form>
+  </dialog>
+
+  <script>
+    window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
+    window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
+  </script>
+  <script src="./app.js?v=fix-auth-hof-2"></script>
+</body>
+</html>
             <div class="hint">스탯 업데이트</div>
           </div>
           <div class="badge">
@@ -141,9 +236,9 @@
         <input id="su_nick" type="text" placeholder="게임 내 닉네임" />
       </label>
 
-      <label><span>내 클래스는...</span>
+      <label><span>클래스를 선택하세요.</span>
         <select id="su_class">
-          <option value="">클래스를 선택해주시기 바랍니다.</option>
+          <option value="">내 클래스는...</option>
           <option value="illusion_swordsman">환영검사</option>
           <option value="abyss_banisher">심연추방자</option>
           <option value="spell_engraver">주문각인사</option>
