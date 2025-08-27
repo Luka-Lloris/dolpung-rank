@@ -5,7 +5,7 @@ body {
   margin: 0;
   color: #f0e9d6;
   background: #0b0b0b;
-  font-family: Pretendard, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR", "Nanum Gothic", "맑은 고딕", sans-serif;
+  font-family: Pretendard, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", "Nanum Gothic", "맑은 고딕", sans-serif;
 }
 
 /* ===== Topbar ===== */
@@ -49,26 +49,33 @@ body {
 }
 .pane { max-width: 1280px; margin: 0 auto; }
 
-/* 🔧 중요: 여기서 statsWrap을 직접 grid로 강제 */
-#statsWrap {
+/* ===== 로그인 전/후 강제 스위칭 ===== */
+/* 기본(guest): 영상만 보이고 스탯은 숨김 */
+#videoWrap { display: block; }
+#statsWrap { display: none; }
+body.authed #videoWrap { display: none !important; }
+body.authed #statsWrap { display: block !important; }
+
+/* ===== 레이아웃 그리드 강제 (로그인 후) ===== */
+#statsWrap > .grid-2 {
   display: grid !important;
-  grid-template-columns: 1fr 0.9fr;  /* 좌(넓게) / 우(조금 좁게) */
+  grid-template-columns: 1.1fr 0.9fr; /* 좌 넓게 / 우 조금 좁게 */
   gap: 32px;
 }
 
-/* 로그인 전: 영상 */
+/* ===== 영상 ===== */
 .video-frame { width: 100%; max-width: 720px; aspect-ratio: 3/2; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.35) inset; background:#111; }
 .video-frame video { width: 100%; height: 100%; object-fit: cover; }
 
-/* ===== Sections ===== */
+/* ===== 공통 타이틀 ===== */
 .section-title { color: #ffeb70; margin: 0 0 16px; }
 
-/* ===== Stats left ===== */
+/* ===== 좌측: 내 전투력 ===== */
 .badge-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .stat-badge {
   background: rgba(0,0,0,.5);
@@ -81,22 +88,22 @@ body {
 .badge-label { font-size: 13px; opacity: .8; margin-bottom: 6px; }
 .badge-value { font-size: 22px; font-weight: 700; }
 
-.note { font-size: 12px; color: #cfc7b2; opacity: .9; }
-.under-badges { margin: 6px 2px 18px; }
-
-/* 폼 상단 라벨/안내 */
-.form-nudge { display: flex; align-items: center; gap: 12px; margin: 6px 2px 10px; }
-.form-nudge .chip {
-  display: inline-block; padding: 4px 8px; border-radius: 999px;
-  background: rgba(255,255,255,.08); font-size: 12px;
+/* 반투명 안내 박스 */
+.note-panel {
+  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 8px 2px 16px;
 }
-.form-nudge .hint { font-size: 12px; color: #cfc7b2; }
+.note-strong { font-weight: 700; }
+.note-sub { font-size: 12px; color: #cfc7b2; margin-top: 2px; }
 
-/* 입력 폼 (12등분 등폭 + 충분한 여백) */
+/* 입력폼 (12등분 등폭) + 여유 마진 30px */
 .stats-form {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 30px 30px;   /* 행/열 30px */
+  gap: 30px 30px;
 }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field span { font-size: 13px; opacity: .9; }
@@ -109,7 +116,7 @@ body {
 .form-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
 .save-note { font-size: 12px; color: #cfc7b2; }
 
-/* ===== HOF right ===== */
+/* ===== 우측: 명예의 전당 ===== */
 .hof-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .tabs { display: flex; gap: 8px; }
 .tab {
@@ -145,13 +152,11 @@ body {
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
 
 /* ===== Responsive ===== */
-/* 1400 이하는 좌우 폭 균등(필요시) */
 @media (max-width: 1400px){
-  #statsWrap { grid-template-columns: 1fr 1fr; }
+  #statsWrap > .grid-2 { grid-template-columns: 1fr 1fr; }
 }
-/* 1024 이하는 단일 컬럼 */
 @media (max-width: 1024px){
-  #statsWrap { grid-template-columns: 1fr; }
-  .hof-grid  { grid-template-columns: 1fr; }
-  .hof-col2  { grid-template-columns: 1fr 1fr; }
+  #statsWrap > .grid-2 { grid-template-columns: 1fr; }
+  .hof-grid { grid-template-columns: 1fr; }
+  .hof-col2 { grid-template-columns: 1fr 1fr; }
 }
