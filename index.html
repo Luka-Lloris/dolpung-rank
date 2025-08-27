@@ -2,241 +2,144 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>The Wind — 길드관리</title>
-  <link rel="stylesheet" href="./styles.css?v=fix-auth-hof-2" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <img class="logo" src="./assets/윈둥이.png" alt="logo" />
-      <div>
-        <div class="title">The Wind</div>
-        <div class="subtitle">길드관리 시스템에 오신걸 환영합니다.</div>
+      <img src="./assets/윈둥이.png" class="logo" alt="" />
+      <div class="title">
+        <h1>The Wind</h1>
+        <p>길드관리 시스템에 오신걸 환영합니다.</p>
       </div>
     </div>
 
-    <form id="authForm" class="auth-bar" autocomplete="on">
-      <input id="email" name="email" type="email" placeholder="이메일" required />
-      <input id="password" name="password" type="password" placeholder="비밀번호" required />
-      <button id="loginBtn" type="submit">로그인</button>
-      <button id="logoutBtn" type="button" style="display:none">로그아웃</button>
-      <button id="signupOpen" type="button" class="kakao">최초가입</button>
-      <span id="meBadge" class="me" style="display:none"></span>
-      <button type="button" class="kakao yellow" disabled>카카오 로그인 (준비중)</button>
+    <form id="authForm" class="auth-bar">
+      <input id="email" type="email" placeholder="이메일" autocomplete="username" />
+      <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password" />
+      <button id="loginBtn" type="submit" class="btn">로그인</button>
+      <button id="logoutBtn" type="button" class="btn ghost">로그아웃</button>
+      <span id="meBadge" class="me"></span>
+      <a id="signupOpen" class="btn ghost" href="#">최초가입</a>
+      <a id="adminLink" class="btn ghost" href="./admin.html">관리자 메뉴</a>
+      <a class="btn kakao ghost" href="#">카카오 로그인 (준비중)</a>
     </form>
-
-    <nav class="admin-nav">
-      <a id="adminLink" href="./admin.html" style="display:none">관리자 메뉴</a>
-    </nav>
   </header>
 
+  <!-- 양피지 배경 캔버스 -->
   <main class="paper">
-    <section class="panel left">
-      <h2>내 전투력</h2>
-
-      <div id="videoWrap" class="video-outer">
-        <div class="video-keep32">
-          <video src="./assets/wind_strike.mp4" muted autoplay loop playsinline></video>
-        </div>
+    <!-- 로그인 전: 영상 -->
+    <section id="videoWrap" class="pane">
+      <h2 class="section-title">내 전투력</h2>
+      <div class="video-frame">
+        <video src="./assets/wind_strike.mp4" autoplay muted loop playsinline></video>
       </div>
+    </section>
 
-      <div id="statsWrap" class="stats-wrap" style="display:none">
-        <div class="badges">
-          <div class="badge">
-            <div class="label">순위</div>
-            <div id="rankBadge" class="value">-</div>
-            <div class="hint">스탯 업데이트 후 저장 버튼을 누르기 전까지는 반영되지 않습니다.</div>
+    <!-- 로그인 후: 스탯 + 명예의 전당 -->
+    <section id="statsWrap" class="pane grid" style="display:none;">
+      <!-- 좌측: 내 전투력 -->
+      <div class="left">
+        <h2 class="section-title">내 전투력</h2>
+
+        <!-- 배지 3개 (순위/레벨/전투력) -->
+        <div class="badge-row">
+          <div class="stat-badge">
+            <div class="badge-label">순위</div>
+            <div id="rankBadge" class="badge-value">-</div>
           </div>
-          <div class="badge">
-            <div class="label">레벨</div>
-            <div id="levelBadge" class="value">-</div>
-            <div class="hint">스탯 업데이트</div>
+          <div class="stat-badge">
+            <div class="badge-label">레벨</div>
+            <div id="levelBadge" class="badge-value">-</div>
           </div>
-          <div class="badge">
-            <div class="label">전투력</div>
-            <div id="bpBadge" class="value">-</div>
-            <div class="hint">저장 버튼을 눌러주세요.</div>
+          <div class="stat-badge">
+            <div class="badge-label">전투력</div>
+            <div id="bpBadge" class="badge-value">-</div>
           </div>
         </div>
 
-        <form id="statsForm" class="grid12">
-          <label class="cell span6">
+        <!-- ⬇️ 카드 바로 아래 안내 -->
+        <p class="note under-badges">저장 버튼을 눌러주세요.</p>
+
+        <!-- ⬆️ 입력폼 바로 위 라벨/안내 -->
+        <div class="form-nudge">
+          <span class="chip">스탯 업데이트</span>
+          <span class="hint">스탯 업데이트 후 <strong>저장</strong> 버튼을 누르기 전까지는 반영되지 않습니다.</span>
+        </div>
+
+        <!-- 입력폼 (12그리드 등폭) -->
+        <form id="statsForm" class="stats-form">
+          <label class="field col-6">
             <span>레벨</span>
-            <input id="level" name="level" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>공격</span>
-            <input id="attack" name="attack" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>방어</span>
-            <input id="defence" name="defence" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>명중</span>
-            <input id="accuracy" name="accuracy" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>기억%</span>
-            <input id="memory_pct" name="memory_pct" type="number" step="0.01" />
-          </label>
-          <label class="cell span6">
-            <span>토벌</span>
-            <input id="subjugate" name="subjugate" type="number" inputmode="numeric" />
+            <input id="level" type="number" inputmode="numeric" />
           </label>
 
-          <div class="cell span12 actions">
-            <button type="submit" class="primary">저장</button>
-            <span id="saveNote" class="note"></span>
+          <label class="field col-6">
+            <span>공격</span>
+            <input id="attack" type="number" inputmode="numeric" />
+          </label>
+
+          <label class="field col-6">
+            <span>방어</span>
+            <input id="defence" type="number" inputmode="numeric" />
+          </label>
+
+          <label class="field col-6">
+            <span>명중</span>
+            <input id="accuracy" type="number" inputmode="numeric" />
+          </label>
+
+          <label class="field col-6">
+            <span>기억%</span>
+            <input id="memory_pct" type="number" step="0.01" inputmode="decimal" />
+          </label>
+
+          <label class="field col-6">
+            <span>토벌</span>
+            <input id="subjugate" type="number" inputmode="numeric" />
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn save">저장</button>
+            <span id="saveNote" class="save-note"></span>
           </div>
         </form>
       </div>
-    </section>
 
-    <section class="panel right">
-      <div class="panel-head">
-        <h2>명예의 전당</h2>
-        <div class="segment">
-          <button id="tab-bp" class="seg on">전투력부문</button>
-          <button id="tab-total" class="seg">종합부문</button>
-        </div>
-      </div>
-
-      <div id="hofWrap" class="hof-root"></div>
-    </section>
-  </main>
-
-  <dialog id="signupModal" class="modal">
-    <form method="dialog" class="modal-body" id="signupForm">
-      <h3>최초가입</h3>
-
-      <label><span>스탠더님이 우편을 받으실 메일 주소를 알려주세요.</span>
-        <input id="su_email" type="email" required />
-      </label>
-
-      <label><span>아무도 모를만한 비밀번호를 입력해주세요.</span>
-        <input id="su_pw" type="password" minlength="8" required />
-      </label>
-
-      <label><span>비밀번호를 다시 확인해주세요.</span>
-        <input id="su_pw2" type="password" minlength="8" required />
-      </label>
-
-      <label><span>스탠더님의 닉네임을 알려주세요.</span>
-        <input id="su_nick" type="text" placeholder="게임 내 닉네임" />
-      </label>
-
-      <label><span>내 클래스는...</span>
-        <select id="su_class">
-          <option value="">클래스를 선택해주시기 바랍니다.</option>
-          <option value="illusion_swordsman">환영검사</option>
-          <option value="abyss_banisher">심연추방자</option>
-          <option value="spell_engraver">주문각인사</option>
-          <option value="executor">집행관</option>
-          <option value="sun_sentinel">태양감시자</option>
-          <option value="aroma_archer">향사수</option>
-        </select>
-      </label>
-
-      <div class="modal-actions">
-        <button id="signupDo" type="submit" class="primary">가입 요청</button>
-        <button type="button" id="signupClose">닫기</button>
-      </div>
-      <p class="help">가입 후 운영진 승인이 필요합니다.</p>
-    </form>
-  </dialog>
-
-  <script>
-    window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
-    window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
-  </script>
-  <script src="./app.js?v=fix-auth-hof-2"></script>
-</body>
-</html>
-            <div class="hint">스탯 업데이트</div>
-          </div>
-          <div class="badge">
-            <div class="label">전투력</div>
-            <div id="bpBadge" class="value">-</div>
-            <div class="hint">저장 버튼을 눌러주세요.</div>
+      <!-- 우측: 명예의 전당 -->
+      <div class="right">
+        <div class="hof-head">
+          <h2 class="section-title">명예의 전당</h2>
+          <div class="tabs">
+            <button id="tab-bp" class="tab on">전투력부문</button>
+            <button id="tab-total" class="tab">종합부문</button>
           </div>
         </div>
-
-        <!-- 입력폼: 그리드 12 동일폭 / 각 항목 사이 간격 30 -->
-        <form id="statsForm" class="grid12">
-          <label class="cell span6">
-            <span>레벨</span>
-            <input id="level" name="level" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>공격</span>
-            <input id="attack" name="attack" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>방어</span>
-            <input id="defence" name="defence" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>명중</span>
-            <input id="accuracy" name="accuracy" type="number" inputmode="numeric" />
-          </label>
-          <label class="cell span6">
-            <span>기억%</span>
-            <input id="memory_pct" name="memory_pct" type="number" step="0.01" />
-          </label>
-          <label class="cell span6">
-            <span>토벌</span>
-            <input id="subjugate" name="subjugate" type="number" inputmode="numeric" />
-          </label>
-
-          <div class="cell span12 actions">
-            <button type="submit" class="primary">저장</button>
-            <span id="saveNote" class="note"></span>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <!-- 우: 명예의 전당 -->
-    <section class="panel right">
-      <div class="panel-head">
-        <h2>명예의 전당</h2>
-        <div class="segment">
-          <button id="tab-bp" class="seg on">전투력부문</button>
-          <button id="tab-total" class="seg">종합부문</button>
-        </div>
-      </div>
-
-      <div id="hofWrap" class="hof-root">
-        <!-- 1st 큰 카드 + 2x2 나머지 4장 (데이터 없으면 윈둥자.png) -->
+        <div id="hofWrap" class="hof-wrap"><!-- 1+4 카드 렌더 --></div>
       </div>
     </section>
   </main>
 
-  <!-- 최초가입 모달 (필요 최소한) -->
+  <!-- 최초가입 모달 -->
   <dialog id="signupModal" class="modal">
-    <form method="dialog" class="modal-body" id="signupForm">
+    <form id="signupForm" method="dialog" class="modal-body">
       <h3>최초가입</h3>
-
-      <label><span>스탠더님이 우편을 받으실 메일 주소를 알려주세요.</span>
-        <input id="su_email" type="email" required />
+      <label>이메일
+        <input id="su_email" type="email" placeholder="스탠더님이 우편을 받으실 메일 주소를 알려주세요." required />
       </label>
-
-      <label><span>아무도 모를만한 비밀번호를 입력해주세요.</span>
-        <input id="su_pw" type="password" minlength="8" required />
+      <label>비밀번호
+        <input id="su_pw" type="password" placeholder="아무도 모를만한 비밀번호를 입력해주세요." required minlength="8" />
       </label>
-
-      <label><span>비밀번호를 다시 확인해주세요.</span>
-        <input id="su_pw2" type="password" minlength="8" required />
+      <label>비밀번호 확인
+        <input id="su_pw2" type="password" placeholder="비밀번호를 다시 확인해주세요." required minlength="8" />
       </label>
-
-      <label><span>스탠더님의 닉네임을 알려주세요.</span>
+      <label>스탠더님의 닉네임을 알려주세요
         <input id="su_nick" type="text" placeholder="게임 내 닉네임" />
       </label>
-
-      <label><span>클래스를 선택하세요.</span>
+      <label>클래스를 선택해주세요
         <select id="su_class">
           <option value="">내 클래스는...</option>
           <option value="illusion_swordsman">환영검사</option>
@@ -247,20 +150,18 @@
           <option value="aroma_archer">향사수</option>
         </select>
       </label>
-
       <div class="modal-actions">
-        <button id="signupDo" type="submit" class="primary">가입 요청</button>
-        <button type="button" id="signupClose">닫기</button>
+        <button id="signupDo" class="btn">가입 요청</button>
+        <button id="signupClose" class="btn ghost">닫기</button>
       </div>
-      <p class="help">가입 후 운영진 승인이 필요합니다.</p>
     </form>
   </dialog>
 
-  <!-- ENV  -->
   <script>
+    // 프로젝트 키 (사용자 제공 값)
     window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
     window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
   </script>
-  <script src="./app.js?v=full-restore"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
