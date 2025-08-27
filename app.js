@@ -1,272 +1,309 @@
-// build tag
-console.log("[TW] app build: hoffix4");
+/* =========================================
+   The Wind — app.js (supabase-js v2, hardened)
+   - 모든 요청 { data, error } 패턴
+   - 실패 시 UI 멈춤 방지 (finally 보장)
+   - 세션 토큰 꼬임 자동 복구
+   - 로그인 후 ensure_profile()
+   ========================================= */
 
-// ---------- Supabase Client ----------
-const supabase = window.supabase.createClient(window.__SB_URL__, window.__SB_ANON__, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+const SB_URL  = window.__SB_URL__  || "https://zxmihqapcemjmzoagpjm.supabase.co";
+const SB_ANON = window.__SB_ANON__ || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
+
+const { createClient } = window.supabase;
+const supabase = createClient(SB_URL, SB_ANON, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
 
-// ---------- Helpers ----------
+/* ---------- DOM 찾기 ---------- */
 const $ = (s) => document.querySelector(s);
-const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? "-"; };
-const toInt = (v) => (v === "" || v === null || v === undefined) ? 0 : parseInt(v, 10);
-const toNum = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v);
-const escapeHTML = (s)=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pick = (...sels) => sels.map((s) => $(s)).find(Boolean);
 
-// 약간의 유틸
-const withTimeout = (p, ms = 12000) =>
-  Promise.race([
-    p,
-    new Promise((_, rej) => setTimeout(() => rej(new Error("요청이 지연됩니다(네트워크/차단 가능성).")), ms))
-  ]);
+const emailInp  = pick('#email', '#login-email', 'input[name="email"]');
+const passInp   = pick('#password', '#login-password', 'input[name="password"]');
+const loginBtn  = pick('#loginBtn', 'button[data-action="login"]');
+const logoutBtn = pick('#logoutBtn', 'button[data-action="logout"]');
+const meBadge   = pick('#meBadge', '[data-role="me-badge"]');
+const adminLink = pick('#adminLink', 'a[data-role="admin-link"]');
 
-// 상태
-let hofBasis = "bp";
-let CURRENT_SEASON = null;
+/* 좌측 스탯 */
+const statsForm = pick('#statsForm', 'form[data-role="stats-form"]');
+const levelInp  = pick('#level', 'input[name="level"]');
+const atkInp    = pick('#attack', 'input[name="attack"]');
+const defInp    = pick('#defence', 'input[name="defence"]');
+const accInp    = pick('#accuracy', 'input[name="accuracy"]');
+const memInp    = pick('#memory_pct', 'input[name="memory_pct"]');
+const subInp    = pick('#subjugate', 'input[name="subjugate"]');
 
-// ---------- HOF (HTML에 기본 플레이스홀더 있지만, JS에서도 한 번 더 안전망) ----------
-function renderHofPlaceholders() {
-  const wrap = document.getElementById("hof");
-  if (!wrap) return;
-  wrap.innerHTML = `
-    <div class="hof-card first"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
-    <div class="hof-card second"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
-    <div class="hof-card third"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
-    <div class="hof-card fourth"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
-    <div class="hof-card fifth"><img src="assets/윈둥자.png" alt=""><div class="name">-</div></div>
-  `;
-}
+/* HOF */
+const hofWrap   = pick('#hofWrap', '[data-role="hof"]');
 
-// ---------- Auth Flow ----------
-supabase.auth.onAuthStateChange((_evt, _session) => reflect());
-reflect();
-
-async function reflect() {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      $("#authSignedOut").style.display = "flex";
-      $("#authSignedIn").style.display  = "none";
-      $("#guestPanel").style.display    = "flex";
-      $("#mePanel").style.display       = "none";
-      await renderTop5(hofBasis); // 비로그인도 공개 랭킹 시도
-      return;
-    }
-
-    // 로그인 UI
-    $("#authSignedOut").style.display = "none";
-    $("#authSignedIn").style.display  = "flex";
-    $("#guestPanel").style.display    = "none";
-    $("#mePanel").style.display       = "block";
-    $("#whoami").textContent          = session.user.email;
-
-    // 프로필 보장
-    try { await supabase.rpc("ensure_profile"); } catch (_) {}
-
-    // 관리자 링크
-    let isAdmin = false;
-    try {
-      const { data: me, error } = await supabase
-        .from("profiles").select("is_admin").eq("user_id", session.user.id).single();
-      if (error) throw error;
-      isAdmin = !!me?.is_admin;
-    } catch {
-      // 조회 실패해도 관리자 RPC가 통하면 표시
-      try { const { error: e2 } = await supabase.rpc("admin_list_pending"); if (!e2) isAdmin = true; } catch {}
-    }
-    document.getElementById("adminLink").style.display = isAdmin ? "inline-block" : "none";
-
-    await renderMine();
-    await renderTop5(hofBasis);
-  } catch (e) {
-    console.error("reflect() failed:", e);
-    renderHofPlaceholders();
+/* ---------- UI 유틸 ---------- */
+function toast(msg) { alert(msg); }
+function setBusy(el, yes, txt = '처리 중...') {
+  if (!el) return;
+  el.disabled = !!yes;
+  if (yes) {
+    el.dataset.prevText ??= el.textContent;
+    el.textContent = txt;
+  } else {
+    el.textContent = el.dataset.prevText ?? el.textContent;
   }
 }
 
-// ---------- HOF ----------
-async function renderTop5(basis = "bp") {
-  hofBasis = basis;
-  const wrap = document.getElementById("hof");
-  if (!wrap) return;
+/* ---------- 세션 토큰 정리 ---------- */
+function projectAuthKey() {
+  // 이 프로젝트 로컬스토리지 키 자동 탐색
+  const ref = new URL(SB_URL).host.split('.')[0]; // zxmihqapcemjmzoagpjm
+  const cand = Object.keys(localStorage).find(k => k.includes(ref) && k.includes('auth-token'));
+  return cand || `sb-${ref}-auth-token`;
+}
+function clearSbSession() {
   try {
-    const { data, error } = await supabase.rpc("rank_list_public", {
-      p_season: null,
-      p_basis: basis,        // 'bp' | 'total'
-      p_class_code: null,
-      p_page: 1,
-      p_page_size: 5
+    localStorage.removeItem(projectAuthKey());
+    // sb-* 쿠키도 정리 (없으면 무시)
+    document.cookie.split(';').forEach(c=>{
+      const k=c.trim().split('=')[0];
+      if (k.startsWith('sb-')) document.cookie=`${k}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     });
-    if (error) throw error;
-    const rows = Array.isArray(data) ? data : [];
+  } catch (_) {}
+}
 
-    const draw = (slot, row) => `
-      <div class="hof-card ${slot}">
-        <img src="assets/윈둥이.png" alt="">
-        <div class="name">${escapeHTML(row?.nickname ?? "-")}</div>
-      </div>`;
-    wrap.innerHTML = [
-      draw("first",  rows[0]),
-      draw("second", rows[1]),
-      draw("third",  rows[2]),
-      draw("fourth", rows[3]),
-      draw("fifth",  rows[4])
-    ].join("");
-  } catch (e) {
-    console.warn("renderTop5 failed, fallback:", e?.message || e);
-    renderHofPlaceholders();
+/* ---------- 세션 건강검사 (초기/저장후) ---------- */
+async function ensureHealthySession() {
+  const { data: s } = await supabase.auth.getSession();
+  if (!s?.session) return false; // 비로그인 OK
+
+  // user 조회 실패 / 권한 에러면 세션 초기화
+  const { data: u, error: ue } = await supabase.auth.getUser();
+  if (ue || !u?.user) {
+    console.warn('[auth] invalid user; clearing session', ue?.message);
+    await supabase.auth.signOut();
+    clearSbSession();
+    return false;
   }
-}
 
-// ---------- My Stats ----------
-async function renderMine() {
-  try {
-    const { data: my, error } = await supabase.from("v_my_rank_current").select("*").maybeSingle();
-    if (error) throw error;
-
-    CURRENT_SEASON = my?.season ?? CURRENT_SEASON;
-
-    setText("rank",       my?.rank_total_by_battle_power ?? "-");
-    setText("levelLabel", my?.level ?? "-");
-    setText("bpLabel",    my?.battle_power ?? "-");
-
-    document.getElementById("level").value      = my?.level ?? 0;
-    document.getElementById("attack").value     = my?.attack ?? 0;
-    document.getElementById("defence").value    = my?.defence ?? 0;
-    document.getElementById("accuracy").value   = my?.accuracy ?? 0;
-    document.getElementById("memory_pct").value = my?.memory_pct ?? 0;
-    document.getElementById("subjugate").value  = my?.subjugate ?? 0;
-
-    const n = my?.attend ?? 0;
-    document.getElementById("attendLine").textContent = `이번 시즌 스탠더님은...\n${n}회 출석 중입니다.`;
-  } catch (e) {
-    console.error("renderMine failed:", e);
+  // 아주 가벼운 쿼리로 토큰 유효성 재확인
+  const { error: pe } = await supabase
+    .from('profiles').select('user_id').eq('user_id', u.user.id).limit(1);
+  if (pe && /JWT|auth/i.test(pe.message)) {
+    console.warn('[auth] jwt broken; clearing session', pe.message);
+    await supabase.auth.signOut();
+    clearSbSession();
+    return false;
   }
+  return true;
 }
 
-async function ensureSeason() {
-  if (CURRENT_SEASON) return CURRENT_SEASON;
-  try {
-    const { data } = await supabase.from("v_my_rank_current").select("season").maybeSingle();
-    CURRENT_SEASON = data?.season ?? null;
-  } catch {}
-  return CURRENT_SEASON;
-}
+/* ---------- 데이터 로더 ---------- */
+async function loadMe() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-async function saveStats() {
-  const result = $("#saveResult");
-  result.textContent = "저장 중...";
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('nickname,is_admin,approved')
+    .eq('user_id', user.id)
+    .maybeSingle();
 
-  try {
-    const season = await ensureSeason();
-    const payload = {
-      p_season:     season,
-      p_level:      toInt(document.getElementById("level").value),
-      p_attack:     toInt(document.getElementById("attack").value),
-      p_defence:    toInt(document.getElementById("defence").value),
-      p_accuracy:   toInt(document.getElementById("accuracy").value),
-      p_memory_pct: toNum(document.getElementById("memory_pct").value),
-      p_subjugate:  toInt(document.getElementById("subjugate").value),
-      p_attend:     null
-    };
-    const { error } = await supabase.rpc("self_upsert_stats", payload);
-    if (error) throw error;
-    result.textContent = "저장 완료!";
-  } catch (e) {
-    result.textContent = "실패: " + (e?.message ?? e);
-    console.error("saveStats failed:", e);
-  } finally {
-    await renderMine();
-    await renderTop5(hofBasis);
+  if (error) {
+    console.warn('profiles load error:', error.message);
+    return { user, profile: null };
   }
+  return { user, profile: data };
 }
 
-// ---------- First Join ----------
-const dlg = document.getElementById("firstJoinModal");
-function openFirstJoin(){ document.getElementById("firstJoinMsg").textContent=""; try{dlg.showModal()}catch{dlg.show()} loadClassCodes(); }
-async function loadClassCodes(){
-  const sel = document.getElementById("firstJoinClass");
-  if (sel.dataset.loaded === "1") return;
-  try{
-    const { data, error } = await supabase.from("class_codes").select("code,label").eq("is_active", true).order("label");
-    if (error) throw error;
-    (data || []).forEach(r => { const o=document.createElement("option"); o.value=r.code; o.textContent=r.label||r.code; sel.appendChild(o); });
-    sel.dataset.loaded="1";
-  }catch(e){ console.error("loadClassCodes failed:", e); }
-}
-async function submitFirstJoin(){
-  const email=$("#firstJoinEmail").value.trim();
-  const pw1=$("#firstJoinPassword").value;
-  const pw2=$("#firstJoinPassword2").value;
-  const nickname=$("#firstJoinNickname").value.trim();
-  const classCode=$("#firstJoinClass").value;
-  const msg=$("#firstJoinMsg");
-  if(!email||!pw1||!pw2||!nickname||!classCode){ msg.textContent="모든 항목을 입력해 주세요."; return;}
-  if(pw1!==pw2){ msg.textContent="비밀번호가 일치하지 않습니다."; return;}
-  msg.textContent="요청 중...";
-  try{
-    const { error } = await withTimeout(supabase.auth.signUp({ email, password: pw1 }));
-    if(error) throw error;
-    localStorage.setItem("tw_firstjoin", JSON.stringify({ nickname, class_code: classCode }));
-    msg.textContent="가입 요청 완료. 메일 인증 후 운영진 승인을 기다려주세요.";
-  }catch(e){ msg.textContent=(e&&e.message)?e.message:String(e); }
-}
-
-// ---------- Login / Logout ----------
-async function login() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const btn = document.getElementById("loginBtn");
-
-  if (!email || !password) { alert("이메일과 비밀번호를 입력해 주세요."); return; }
-
-  btn.disabled = true; const orig = btn.textContent; btn.textContent = "로그인 중…";
-  try {
-    const { data, error } = await withTimeout(
-      supabase.auth.signInWithPassword({ email, password }), 12000
-    );
-    if (error) throw error;
-    // onAuthStateChange에서 reflect가 호출되지만, 혹시 몰라 보조 호출
-    await reflect();
-  } catch (e) {
-    const msg = (e && e.message) ? e.message : String(e);
-    if (msg === "Failed to fetch" || /지연됩니다/.test(msg)) {
-      alert([
-        "로그인 요청이 차단/지연되었습니다.",
-        "Supabase Auth 설정 확인:",
-        "- Allowed CORS Origins: https://luka-lloris.github.io, https://luka-lloris.github.io/<repo>",
-        "- Additional Redirect URLs / Logout URLs 동일하게 추가",
-        "- __SB_URL__/__SB_ANON__ 값 확인"
-      ].join("\n"));
-    } else {
-      alert(msg);
-    }
-  } finally {
-    btn.disabled = false; btn.textContent = orig;
+async function loadMyRank() {
+  const { data, error } = await supabase
+    .from('v_my_rank_current')
+    .select('level,battle_power,nickname,attend,rank_total_by_battle_power')
+    .maybeSingle();
+  if (error) {
+    console.warn('v_my_rank_current error:', error.message);
+    return null;
   }
+  return data;
 }
 
-document.getElementById("loginBtn").addEventListener("click", login);
-
-// ← 엔터키로 로그인: 이메일/비번에 Enter 치면 로그인 버튼 동작
-["email","password"].forEach(id => {
-  const el = document.getElementById(id);
-  el.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); login(); }
+async function loadHOF() {
+  const { data, error } = await supabase.rpc('rank_list_public', {
+    p_season: null, p_basis: 'bp', p_class_code: null, p_page: 1, p_page_size: 5
   });
+  if (error) {
+    console.warn('rank_list_public error:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+/* ---------- 렌더 ---------- */
+function renderHeader(me) {
+  if (meBadge) {
+    meBadge.textContent = me?.user?.email || '';
+    meBadge.style.display = me ? 'inline-flex' : 'none';
+  }
+  if (logoutBtn) logoutBtn.style.display = me ? 'inline-flex' : 'none';
+  if (loginBtn)  loginBtn.style.display  = me ? 'none'       : 'inline-flex';
+
+  if (adminLink) {
+    const isAdmin = !!me?.profile?.is_admin;
+    adminLink.style.display = me && isAdmin ? 'inline-flex' : 'none';
+  }
+}
+
+function renderStatsCard(myRank) {
+  const rEl = pick('#rankBadge','[data-role="rank"]');
+  const lEl = pick('#levelBadge','[data-role="level"]');
+  const bEl = pick('#bpBadge','[data-role="bp"]');
+  if (rEl) rEl.textContent = myRank?.rank_total_by_battle_power ?? '-';
+  if (lEl) lEl.textContent = myRank?.level ?? '-';
+  if (bEl) bEl.textContent = myRank?.battle_power ?? '-';
+}
+
+function renderHOF(list) {
+  if (!hofWrap) return;
+  const placeholder = './assets/윈둥자.png';
+  const map = {
+    illusion_swordsman: './assets/환영검사.png',
+    abyss_banisher:     './assets/심연추방자.png',
+    spell_engraver:     './assets/주문각인사.png',
+    executor:           './assets/집행관.png',
+    sun_sentinel:       './assets/태양감시자.png',
+    aroma_archer:       './assets/향사수.png',
+  };
+  const imgOf = (c) => map[c] || placeholder;
+
+  const top1 = list[0];
+  const rest = list.slice(1, 5);
+
+  const card = (item, big=false) => `
+    <div class="hof-card ${big?'big':''}">
+      <div class="hof-img"><img src="${item ? imgOf(item.class_code) : placeholder}" alt=""></div>
+      <div class="hof-name">${item?.nickname ?? '-'}</div>
+    </div>`;
+
+  hofWrap.innerHTML = `
+    <div class="hof-grid">
+      <div class="hof-col1">${card(top1, true)}</div>
+      <div class="hof-col2">${rest.map(x=>card(x)).join('')}</div>
+    </div>`;
+}
+
+/* ---------- 액션 ---------- */
+async function doLogin() {
+  if (!emailInp || !passInp) return toast('로그인 입력창을 찾을 수 없습니다.');
+  const email = emailInp.value.trim();
+  const password = passInp.value;
+  if (!email || !password) return toast('이메일/비밀번호를 입력해주세요.');
+
+  setBusy(loginBtn, true, '로그인 중...');
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return toast(error.message || '로그인 실패');
+
+    // 프로필 확보 (실패해도 앱 계속 진행)
+    const { error: ep } = await supabase.rpc('ensure_profile');
+    if (ep) console.warn('ensure_profile warn:', ep.message);
+
+    await refreshUI();
+    toast('로그인 성공');
+  } catch (e) {
+    console.error(e);
+    toast('로그인 중 오류');
+  } finally {
+    setBusy(loginBtn, false);
+  }
+}
+
+async function doLogout() {
+  setBusy(logoutBtn, true, '로그아웃 중...');
+  try {
+    await supabase.auth.signOut();
+    clearSbSession(); // 혹시 토큰 꼬임 방지
+    await refreshUI();
+  } catch (e) {
+    console.error(e);
+    toast('로그아웃 실패');
+  } finally {
+    setBusy(logoutBtn, false);
+  }
+}
+
+async function doSaveStats(e) {
+  e?.preventDefault?.();
+  if (!statsForm) return;
+
+  const asInt = (el) => (el && el.value !== '' ? parseInt(el.value, 10) : null);
+  const asNum = (el) => (el && el.value !== '' ? Number(el.value) : null);
+
+  const payload = {
+    p_season: null,
+    p_level: asInt(levelInp),
+    p_attack: asInt(atkInp),
+    p_defence: asInt(defInp),
+    p_accuracy: asInt(accInp),
+    p_memory_pct: asNum(memInp),
+    p_subjugate: asInt(subInp),
+    p_attend: null,
+  };
+
+  const saveBtn = statsForm.querySelector('button[type="submit"],button[data-action="save"]');
+  setBusy(saveBtn, true, '저장 중...');
+  try {
+    const { error } = await supabase.rpc('self_upsert_stats', payload);
+    if (error) {
+      console.error('save error:', error);
+      return toast('저장 실패: ' + (error.message || '서버 오류'));
+    }
+    toast('저장 완료');
+    // 저장 직후 세션 꼬임 감지 → 자동 복구
+    await ensureHealthySession();
+    await refreshUI();
+  } catch (e) {
+    console.error(e);
+    toast('저장 중 오류');
+  } finally {
+    setBusy(saveBtn, false);
+  }
+}
+
+/* ---------- 메인 리프레시 ---------- */
+async function refreshUI() {
+  try {
+    const ok = await ensureHealthySession(); // 로그인/비로그인 모두 안전 상태 보장
+    const me = await loadMe();
+    renderHeader(me);
+
+    if (me && statsForm) {
+      statsForm.style.display = 'block';
+      const myRank = await loadMyRank();   // 실패해도 앱 지속
+      renderStatsCard(myRank);
+    } else if (statsForm) {
+      statsForm.style.display = 'none';
+    }
+
+    const hof = await loadHOF();
+    renderHOF(hof);
+  } catch (e) {
+    console.error('[refreshUI]', e);
+    // 치명적이면 세션 초기화하고 최소한 HOF만이라도 보이게
+    clearSbSession();
+    const hof = await loadHOF().catch(()=>[]);
+    renderHOF(hof);
+  }
+}
+
+/* ---------- 이벤트 연결 ---------- */
+if (loginBtn)  loginBtn.addEventListener('click', doLogin);
+if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
+if (statsForm) statsForm.addEventListener('submit', doSaveStats);
+
+if (passInp) passInp.addEventListener('keydown', (e)=>{ if (e.key==='Enter') doLogin(); });
+
+supabase.auth.onAuthStateChange((ev)=> {
+  if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT' || ev === 'TOKEN_REFRESHED') {
+    refreshUI();
+  }
 });
 
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  try{ await supabase.auth.signOut(); }catch(e){ console.error(e); }
-  await reflect();
-});
-
-// ---------- Events (나머지) ----------
-document.getElementById("firstJoinBtn").addEventListener("click", openFirstJoin);
-document.getElementById("firstJoinClose").addEventListener("click", () => dlg.close());
-document.getElementById("firstJoinSubmit").addEventListener("click", submitFirstJoin);
-document.getElementById("saveStats").addEventListener("click", saveStats);
-document.getElementById("kakaoBtn").addEventListener("click", () => alert("카카오 로그인은 준비 중입니다."));
-document.getElementById("tabScore").addEventListener("click", async () => { document.getElementById("tabScore").classList.add("on"); document.getElementById("tabTotal").classList.remove("on"); await renderTop5("bp"); });
-document.getElementById("tabTotal").addEventListener("click", async () => { document.getElementById("tabTotal").classList.add("on"); document.getElementById("tabScore").classList.remove("on"); await renderTop5("total"); });
+document.addEventListener('DOMContentLoaded', refreshUI);
+console.info('[TW] app booted (hardened)');
