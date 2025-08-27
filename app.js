@@ -1,4 +1,4 @@
-// Supabase 클라이언트 (세션 유지/토큰 자동갱신/URL 감지 활성화)
+// Supabase 클라이언트
 const supabase = window.supabase.createClient(window.__SB_URL__, window.__SB_ANON__, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
@@ -8,7 +8,7 @@ const setText = (id, v) => { const el = document.getElementById(id); if (el) el.
 const toInt = (v) => (v === "" || v === null || v === undefined) ? 0 : parseInt(v, 10);
 const toNum = (v) => (v === "" || v === null || v === undefined) ? 0 : Number(v);
 
-// 세션 반영
+// 세션 이벤트
 supabase.auth.onAuthStateChange(() => reflect());
 reflect();
 
@@ -32,7 +32,6 @@ async function reflect() {
 
   await supabase.rpc("ensure_profile").catch(()=>{});
 
-  // 관리자 메뉴 노출 + 최초가입 데이터(닉/클래스) 자동 반영
   const { data: me } = await supabase
     .from("profiles")
     .select("is_admin,nickname,class_code")
@@ -41,6 +40,7 @@ async function reflect() {
 
   document.getElementById("adminLink").style.display = (me?.is_admin) ? "inline-block" : "none";
 
+  // 최초가입 데이터(닉/클래스) 자동 반영
   try {
     const pending = JSON.parse(localStorage.getItem("tw_firstjoin") || "null");
     if (pending && (!me?.nickname || !me?.class_code)) {
@@ -199,25 +199,24 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
         "Failed to fetch — 브라우저가 요청을 차단했습니다.",
         "Supabase Auth 설정 확인:",
         "- Allowed CORS Origins: https://luka-lloris.github.io, https://luka-lloris.github.io/<repo>",
-        "- Additional Redirect URLs: 동일하게 추가",
-        "- Allowed Logout URLs: 동일하게 추가",
-        "- __SB_URL__/__SB_ANON__ 값이 정확한지 확인(https, anon key)"
+        "- Additional Redirect URLs: 위와 동일",
+        "- Allowed Logout URLs: 위와 동일",
+        "- __SB_URL__/__SB_ANON__ 값이 정확한지"
       ].join("\n"));
-    } else {
-      alert(msg);
-    }
+    } else { alert(msg); }
   }
 });
 
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await supabase.auth.signOut();
-});
-
+document.getElementById("logoutBtn").addEventListener("click", async () => { await supabase.auth.signOut(); });
 document.getElementById("firstJoinBtn").addEventListener("click", openFirstJoin);
 document.getElementById("firstJoinClose").addEventListener("click", () => dlg.close());
 document.getElementById("firstJoinSubmit").addEventListener("click", submitFirstJoin);
-
 document.getElementById("saveStats").addEventListener("click", saveStats);
+
+// 카카오 버튼(준비중 안내)
+document.getElementById("kakaoBtn").addEventListener("click", () => {
+  alert("카카오 로그인은 준비 중입니다.");
+});
 
 document.getElementById("tabScore").addEventListener("click", async () => {
   document.getElementById("tabScore").classList.add("on");
