@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Wind | Guild system</title>
+  <title>The Wind — 길드관리</title>
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
-<body>
+<body class="guest"><!-- 기본은 게스트로 시작 -->
   <header class="topbar">
     <div class="brand">
-      <img src="./assets/윈둥이.png" class="logo" alt="" />
+      <img src="./assets/윈둥이.png" class="logo" alt="">
       <div class="title">
         <h1>The Wind</h1>
         <p>길드관리 시스템에 오신걸 환영합니다.</p>
@@ -24,14 +24,13 @@
       <button id="logoutBtn" type="button" class="btn ghost">로그아웃</button>
       <span id="meBadge" class="me"></span>
       <a id="signupOpen" class="btn ghost" href="#">최초가입</a>
-      <a id="adminLink" class="btn ghost" href="./admin.html">관리자 메뉴</a>
       <a class="btn kakao ghost" href="#">카카오 로그인 (준비중)</a>
+      <a id="adminLink" class="btn ghost" href="./admin.html">관리자 메뉴</a>
     </form>
   </header>
 
-  <!-- 양피지 배경 캔버스 -->
   <main class="paper">
-    <!-- 로그인 전: 영상 -->
+    <!-- 로그인 전: 영상 전용 -->
     <section id="videoWrap" class="pane">
       <h2 class="section-title">내 전투력</h2>
       <div class="video-frame">
@@ -39,86 +38,83 @@
       </div>
     </section>
 
-    <!-- 로그인 후: 스탯 + 명예의 전당 -->
-    <section id="statsWrap" class="pane grid" style="display:none;">
-      <!-- 좌측: 내 전투력 -->
-      <div class="left">
-        <h2 class="section-title">내 전투력</h2>
+    <!-- 로그인 후: 좌(스탯) + 우(HoF) -->
+    <section id="statsWrap" class="pane" style="display:none;">
+      <div class="grid-2">
+        <!-- 좌 -->
+        <div class="left">
+          <h2 class="section-title">내 전투력</h2>
 
-        <!-- 배지 3개 (순위/레벨/전투력) -->
-        <div class="badge-row">
-          <div class="stat-badge">
-            <div class="badge-label">순위</div>
-            <div id="rankBadge" class="badge-value">-</div>
+          <!-- 요약 배지 -->
+          <div class="badge-row">
+            <div class="stat-badge">
+              <div class="badge-label">순위</div>
+              <div id="rankBadge" class="badge-value">-</div>
+            </div>
+            <div class="stat-badge">
+              <div class="badge-label">레벨</div>
+              <div id="levelBadge" class="badge-value">-</div>
+            </div>
+            <div class="stat-badge">
+              <div class="badge-label">전투력</div>
+              <div id="bpBadge" class="badge-value">-</div>
+            </div>
           </div>
-          <div class="stat-badge">
-            <div class="badge-label">레벨</div>
-            <div id="levelBadge" class="badge-value">-</div>
+
+          <!-- 반투명 안내 박스 (순서 고정) -->
+          <div class="note-panel">
+            <div class="note-strong">스탯 업데이트 후 저장 버튼을 눌러주세요</div>
+            <div class="note-sub">저장 버튼을 누르기 전까지는 반영되지 않습니다.</div>
           </div>
-          <div class="stat-badge">
-            <div class="badge-label">전투력</div>
-            <div id="bpBadge" class="badge-value">-</div>
-          </div>
+
+          <!-- 입력폼 (12 그리드 등폭) -->
+          <form id="statsForm" class="stats-form">
+            <label class="field col-6">
+              <span>레벨</span>
+              <input id="level" type="number" inputmode="numeric" />
+            </label>
+            <label class="field col-6">
+              <span>공격</span>
+              <input id="attack" type="number" inputmode="numeric" />
+            </label>
+            <label class="field col-6">
+              <span>방어</span>
+              <input id="defence" type="number" inputmode="numeric" />
+            </label>
+            <label class="field col-6">
+              <span>명중</span>
+              <input id="accuracy" type="number" inputmode="numeric" />
+            </label>
+            <label class="field col-6">
+              <span>기억%</span>
+              <input id="memory_pct" type="number" step="0.01" inputmode="decimal" />
+            </label>
+            <label class="field col-6">
+              <span>토벌</span>
+              <input id="subjugate" type="number" inputmode="numeric" />
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="btn save">저장</button>
+              <span id="saveNote" class="save-note"></span>
+            </div>
+          </form>
         </div>
 
-        <!-- ⬇️ 카드 바로 아래 안내 -->
-        <p class="note under-badges">저장 버튼을 눌러주세요.</p>
-
-        <!-- ⬆️ 입력폼 바로 위 라벨/안내 -->
-        <div class="form-nudge">
-          <span class="chip">스탯 업데이트</span>
-          <span class="hint">스탯 업데이트 후 <strong>저장</strong> 버튼을 누르기 전까지는 반영되지 않습니다.</span>
-        </div>
-
-        <!-- 입력폼 (12그리드 등폭) -->
-        <form id="statsForm" class="stats-form">
-          <label class="field col-6">
-            <span>레벨</span>
-            <input id="level" type="number" inputmode="numeric" />
-          </label>
-
-          <label class="field col-6">
-            <span>공격</span>
-            <input id="attack" type="number" inputmode="numeric" />
-          </label>
-
-          <label class="field col-6">
-            <span>방어</span>
-            <input id="defence" type="number" inputmode="numeric" />
-          </label>
-
-          <label class="field col-6">
-            <span>명중</span>
-            <input id="accuracy" type="number" inputmode="numeric" />
-          </label>
-
-          <label class="field col-6">
-            <span>기억%</span>
-            <input id="memory_pct" type="number" step="0.01" inputmode="decimal" />
-          </label>
-
-          <label class="field col-6">
-            <span>토벌</span>
-            <input id="subjugate" type="number" inputmode="numeric" />
-          </label>
-
-          <div class="form-actions">
-            <button type="submit" class="btn save">저장</button>
-            <span id="saveNote" class="save-note"></span>
+        <!-- 우 -->
+        <div class="right">
+          <div class="hof-head">
+            <h2 class="section-title">명예의 전당</h2>
+            <div class="tabs">
+              <button id="tab-bp" class="tab on">전투력부문</button>
+              <button id="tab-total" class="tab">종합부문</button>
+            </div>
           </div>
-        </form>
-      </div>
 
-      <!-- 우측: 명예의 전당 -->
-      <div class="right">
-        <div class="hof-head">
-          <h2 class="section-title">명예의 전당</h2>
-          <div class="tabs">
-            <button id="tab-bp" class="tab on">전투력부문</button>
-            <button id="tab-total" class="tab">종합부문</button>
+          <div id="hofWrap" class="hof-wrap">
+            <!-- app.js가 1(큰) + 4(작은) 카드로 렌더링 -->
           </div>
         </div>
-        <div id="hofWrap" class="hof-wrap"><!-- 1+4 카드 렌더 --></div>
       </div>
     </section>
   </main>
@@ -127,18 +123,23 @@
   <dialog id="signupModal" class="modal">
     <form id="signupForm" method="dialog" class="modal-body">
       <h3>최초가입</h3>
+
       <label>이메일
         <input id="su_email" type="email" placeholder="스탠더님이 우편을 받으실 메일 주소를 알려주세요." required />
       </label>
+
       <label>비밀번호
         <input id="su_pw" type="password" placeholder="아무도 모를만한 비밀번호를 입력해주세요." required minlength="8" />
       </label>
+
       <label>비밀번호 확인
         <input id="su_pw2" type="password" placeholder="비밀번호를 다시 확인해주세요." required minlength="8" />
       </label>
+
       <label>스탠더님의 닉네임을 알려주세요
         <input id="su_nick" type="text" placeholder="게임 내 닉네임" />
       </label>
+
       <label>클래스를 선택해주세요
         <select id="su_class">
           <option value="">내 클래스는...</option>
@@ -150,6 +151,7 @@
           <option value="aroma_archer">향사수</option>
         </select>
       </label>
+
       <div class="modal-actions">
         <button id="signupDo" class="btn">가입 요청</button>
         <button id="signupClose" class="btn ghost">닫기</button>
@@ -157,8 +159,8 @@
     </form>
   </dialog>
 
+  <!-- Supabase 키 (사용자 제공값) -->
   <script>
-    // 프로젝트 키 (사용자 제공 값)
     window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
     window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
   </script>
