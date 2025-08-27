@@ -17,14 +17,17 @@ body{
 .btn.kakao:hover{background:#e5ce00;border-color:#e5ce00}
 .pill{background:rgba(255,255,255,.08);padding:6px 10px;border-radius:999px}
 
-/* ===== Header ===== */
+/* ===== Header (타이틀바) ===== */
 .page-header{
+  position:sticky;top:0;z-index:100;
   display:flex;justify-content:space-between;align-items:center;
-  padding:10px 16px;border-bottom:1px solid #222;background:#000;
-  position:sticky;top:0;z-index:50
+  padding:10px 16px;
+  background:#000;                 /* ← 색상 복구 */
+  border-bottom:1px solid #222;    /* ← 얇은 구분선 */
+  box-shadow:0 2px 12px rgba(0,0,0,.35);
 }
 .brand{display:flex;gap:10px;align-items:center}
-.masot{width:56px;height:auto;transform:translateY(6px)}
+.mascot{height:56px;width:auto;display:block;flex:0 0 auto;transform:translateY(6px)} /* ← 크기 고정 */
 .titles h1{margin:0;font-size:28px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
 .titles p{margin:2px 0 0;color:#ddd}
 .auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -32,16 +35,20 @@ body{
 .auth-inline input{
   height:36px;padding:0 10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;min-width:210px
 }
+@media (max-width:980px){
+  .mascot{height:48px}
+  .titles h1{font-size:22px}
+}
 
-/* ===== Stage ===== */
+/* ===== Stage (상/하 50 유지) ===== */
 .stage{
   min-height:100%;
-  padding:50px 0; /* 상하 여백만 */
+  padding:50px 0;
   display:flex;justify-content:center;align-items:flex-start;
   background:radial-gradient(1200px 600px at 50% -150px, rgba(255,255,255,.06), transparent)
 }
 
-/* ===== Parchment (큰 bg 안쪽 안전 여백) ===== */
+/* ===== Parchment ===== */
 :root{
   --paper-pad-x: clamp(68px, 8vw, 140px);
   --paper-pad-top: clamp(36px, 5vw, 90px);
@@ -52,7 +59,7 @@ body{
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:url("assets/bg.png") center/100% 100% no-repeat;
 }
-.parchment>*{position:relative;z-index:1}
+.parchment > *{position:relative;z-index:1}
 .parchment-inset{
   padding:var(--paper-pad-top) var(--paper-pad-x) var(--paper-pad-bot);
   display:grid;grid-template-columns:1.1fr 1fr;gap:30px
@@ -86,7 +93,7 @@ body{
 .attendance{white-space:pre-line;font-size:18px;margin-top:6px}
 .actions{display:flex;align-items:center;gap:8px;margin-top:10px}
 
-/* ===== Right: 명예의 전당 ===== */
+/* ===== Right: 명예의 전당 (1등 세로 + 우측 2×2) ===== */
 .hall-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .chip{height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff}
 .chip.on{background:rgba(255,255,255,.18)}
@@ -107,13 +114,12 @@ body{
 .hof .second{grid-area:second}.hof .third{grid-area:third}
 .hof .fourth{grid-area:fourth}.hof .fifth{grid-area:fifth}
 
-/* ===== Modal (중앙 고정 + 폭 500대) ===== */
+/* ===== Modal ===== */
 .modal{
   border:0;padding:0;border-radius:14px;
-  width:min(96vw, 560px);       /* 500~560px 정도 */
-  margin:auto;                  /* 중앙 배치 */
-  inset:0;                      /* dialog를 뷰포트 중앙으로 */
-  background:#0a0f17;color:#eee;
+  width:min(96vw, 560px);
+  margin:auto;inset:0;
+  background:#0a0f17;color:#eee
 }
 .modal::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(1px)}
 .modal-card{padding:16px;display:grid;gap:10px}
@@ -132,6 +138,4 @@ body{
     grid-template-areas:"first" "second" "third" "fourth" "fifth";
     grid-template-columns:1fr;grid-template-rows:auto
   }
-  .masot{width:48px}
-  .titles h1{font-size:22px}
 }
