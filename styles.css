@@ -1,10 +1,13 @@
-/* Reset & Base */
+/* ===== Reset & Base ===== */
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif}
+body{
+  margin:0;background:#000;color:#eee;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif
+}
 .small{font-size:12px}.dim{opacity:.85}
 
-/* Buttons */
+/* ===== Buttons ===== */
 .btn{height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
 .btn:hover{background:rgba(255,255,255,.16)}
 .btn.primary{background:#3ea76a;border-color:#3ea76a}.btn.primary:hover{background:#2f8a55}
@@ -14,62 +17,121 @@ body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Seg
 .btn.kakao:hover{background:#e5ce00;border-color:#e5ce00}
 .pill{background:rgba(255,255,255,.08);padding:6px 10px;border-radius:999px}
 
-/* Header */
-.page-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #222;background:#000;position:sticky;top:0;z-index:50}
+/* ===== Header ===== */
+.page-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;border-bottom:1px solid #222;background:#000;
+  position:sticky;top:0;z-index:50
+}
 .brand{display:flex;gap:10px;align-items:center}
-.mascot{width:56px;height:auto;transform:translateY(6px)}
+.masot{width:56px;height:auto;transform:translateY(6px)}
 .titles h1{margin:0;font-size:28px;letter-spacing:.5px;color:#d6f58f;text-shadow:0 0 10px rgba(214,245,143,.25)}
 .titles p{margin:2px 0 0;color:#ddd}
 .auth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .auth-inline{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.auth-inline input{height:36px;padding:0 10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;min-width:210px}
+.auth-inline input{
+  height:36px;padding:0 10px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;min-width:210px
+}
 
-/* Stage + parchment (좌우 여백 없음: 꽉 차게) */
-.stage{min-height:100%;padding:50px 0;display:flex;justify-content:center;align-items:flex-start;background:radial-gradient(1200px 600px at 50% -150px, rgba(255,255,255,.06), transparent)}
-.parchment{position:relative;width:100%;margin:0;background:url("assets/bg.png") center top/cover no-repeat;border-radius:12px;padding:30px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-.parchment-inset{display:grid;grid-template-columns:1.1fr 1fr;gap:30px}
+/* ===== Stage ===== */
+.stage{
+  min-height:100%;
+  padding:50px 0; /* 상하 여백만 */
+  display:flex;justify-content:center;align-items:flex-start;
+  background:radial-gradient(1200px 600px at 50% -150px, rgba(255,255,255,.06), transparent)
+}
 
-/* Cards */
-.card{border-radius:16px;background:rgba(0,0,0,.35);padding:18px;backdrop-filter:blur(2px)}
+/* ===== Parchment (큰 bg 안쪽 안전 여백) ===== */
+:root{
+  --paper-pad-x: clamp(68px, 8vw, 140px);
+  --paper-pad-top: clamp(36px, 5vw, 90px);
+  --paper-pad-bot: clamp(48px, 6vw, 110px);
+}
+.parchment{position:relative;width:100%;margin:0;border-radius:12px}
+.parchment::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:url("assets/bg.png") center/100% 100% no-repeat;
+}
+.parchment>*{position:relative;z-index:1}
+.parchment-inset{
+  padding:var(--paper-pad-top) var(--paper-pad-x) var(--paper-pad-bot);
+  display:grid;grid-template-columns:1.1fr 1fr;gap:30px
+}
+
+/* ===== Cards ===== */
+.card{
+  border-radius:16px;background:rgba(0,0,0,.35);padding:18px;
+  backdrop-filter:blur(2px)
+}
 .card h2{margin:0 0 10px;color:#f4de62;letter-spacing:1px}
 
-/* Left */
+/* ===== Left: 내 전투력 ===== */
 .guest-video{display:flex;align-items:center;justify-content:center}
-.guest-video video{width:450px;height:300px;object-fit:cover;border-radius:12px;overflow:hidden}
+.guest-video video{
+  width:min(100%, 560px);  /* 3:2 비율로, 최대폭 560px */
+  aspect-ratio:3 / 2;
+  height:auto; object-fit:cover; border-radius:12px; overflow:hidden;
+}
 .me-panel .my-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:6px}
-.me-panel .stat{background:rgba(0,0,0,.35);border-radius:10px;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
+.me-panel .stat{
+  background:rgba(0,0,0,.35);border-radius:10px;height:52px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px
+}
 .me-panel .label{opacity:.9}.me-panel .value{font-weight:700}
 .grid.stats-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:30px;margin-top:8px}
 .grid.stats-grid>label{grid-column:span 4;display:grid;gap:6px}
-.grid.stats-grid input{height:40px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;padding:0 12px}
+.grid.stats-grid input{
+  height:40px;border-radius:10px;border:1px solid #333;background:#111;color:#eee;padding:0 12px
+}
 .attendance{white-space:pre-line;font-size:18px;margin-top:6px}
 .actions{display:flex;align-items:center;gap:8px;margin-top:10px}
 
-/* Right: Hall of Fame (1등 세로 + 오른쪽 2x2) */
+/* ===== Right: 명예의 전당 ===== */
 .hall-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .chip{height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff}
 .chip.on{background:rgba(255,255,255,.18)}
-.hof{display:grid;gap:30px;grid-template-columns:1.2fr 1fr 1fr;grid-template-rows:auto auto;grid-template-areas:"first second third" "first fourth fifth"}
-.hof-card{background:#0f0f10;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:180px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.hof{
+  display:grid;gap:30px;
+  grid-template-columns:1.2fr 1fr 1fr;
+  grid-template-rows:auto auto;
+  grid-template-areas:"first second third" "first fourth fifth"
+}
+.hof-card{
+  background:#0f0f10;border-radius:14px;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  min-height:180px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)
+}
 .hof-card img{width:100%;height:100%;object-fit:contain}
 .hof-card .name{width:100%;text-align:center;padding:8px 10px;background:rgba(255,255,255,.04)}
 .hof .first{grid-area:first;min-height:360px}
-.hof .second{grid-area:second}.hof .third{grid-area:third}.hof .fourth{grid-area:fourth}.hof .fifth{grid-area:fifth}
+.hof .second{grid-area:second}.hof .third{grid-area:third}
+.hof .fourth{grid-area:fourth}.hof .fifth{grid-area:fifth}
 
-/* Modal */
-.modal{border:0;padding:0;border-radius:14px;max-width:min(560px,96vw);background:#0a0f17;color:#eee}
+/* ===== Modal (중앙 고정 + 폭 500대) ===== */
+.modal{
+  border:0;padding:0;border-radius:14px;
+  width:min(96vw, 560px);       /* 500~560px 정도 */
+  margin:auto;                  /* 중앙 배치 */
+  inset:0;                      /* dialog를 뷰포트 중앙으로 */
+  background:#0a0f17;color:#eee;
+}
 .modal::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(1px)}
 .modal-card{padding:16px;display:grid;gap:10px}
 .modal-card h3{margin:0 0 8px}
 .modal-card label{display:grid;gap:6px;font-size:14px}
-.modal-card input,.modal-card select{height:38px;padding:0 12px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee}
+.modal-card input,.modal-card select{
+  height:42px;padding:0 12px;border-radius:10px;border:1px solid #333;background:#0c0f16;color:#eee
+}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 
-/* Responsive */
+/* ===== Responsive ===== */
 @media (max-width:980px){
   .stage{padding:24px 18px}
-  .parchment-inset{grid-template-columns:1fr;gap:20px}
-  .hof{grid-template-areas:"first" "second" "third" "fourth" "fifth";grid-template-columns:1fr;grid-template-rows:auto}
-  .mascot{width:48px}
+  .parchment-inset{padding:24px 18px 28px;grid-template-columns:1fr;gap:20px}
+  .hof{
+    grid-template-areas:"first" "second" "third" "fourth" "fifth";
+    grid-template-columns:1fr;grid-template-rows:auto
+  }
+  .masot{width:48px}
   .titles h1{font-size:22px}
 }
