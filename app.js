@@ -1,4 +1,4 @@
-/* The Wind — app.js (auth 전환 고정 + HOF 5장 패딩 + 오탐 얼럿 제거) */
+/* The Wind — app.js (my-rank 필터 + HOF Top1 fallback) */
 
 const SB_URL  = window.__SB_URL__  || "https://zxmihqapcemjmzoagpjm.supabase.co";
 const SB_ANON = window.__SB_ANON__ || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
@@ -48,7 +48,9 @@ const suNick  = $('#su_nick');
 const suClass = $('#su_class');
 
 const toast = (m)=> alert(m);
+const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
 
+/* ---------- 유틸 ---------- */
 function projectAuthKey() {
   const ref = new URL(SB_URL).host.split('.')[0];
   return `sb-${ref}-auth-token`;
@@ -66,7 +68,6 @@ function clearSessionHard() {
 /* ---------- 렌더 ---------- */
 function renderHeader(user, isAdmin){
   if (user) authBar?.classList.add('authed'); else authBar?.classList.remove('authed');
-
   if (meBadge)  { meBadge.style.display = user ? 'inline' : 'none'; meBadge.textContent = user ? user.email : ''; }
   if (loginBtn) { loginBtn.style.display = user ? 'none' : 'inline-block'; }
   if (logoutBtn){ logoutBtn.style.display = user ? 'inline-block' : 'none'; }
@@ -93,7 +94,6 @@ function renderHOF(listRaw) {
   };
   const img = c => map[c] || ph;
 
-  // 항상 5장을 채운다(부족분은 null → 플레이스홀더)
   const list = Array.isArray(listRaw) ? [...listRaw] : [];
   while (list.length < 5) list.push(null);
 
@@ -121,28 +121,55 @@ async function loadMe() {
     .select('is_admin,approved').eq('user_id', user.id).maybeSingle();
   return { user, isAdmin: !!data?.is_admin };
 }
+
 async function loadMyRank() {
-  const { data } = await supabase.from('v_my_rank_current')
-    .select('level,battle_power,nickname,attend,rank_total_by_battle_power')
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  // ⬇️ 본인 행만 확정 조회 (RLS 우회 X, 정책 준수)
+  const { data, error } = await supabase.from('v_my_rank_current')
+    .select('user_id,nickname,class_code,level,battle_power,attend,rank_total_by_battle_power')
+    .eq('user_id', user.id)
     .maybeSingle();
+  if (error) { console.warn('v_my_rank_current error:', error.message); return null; }
   return data || null;
 }
+
 let hofBasis = 'bp';
-async function loadHOF() {
+async function loadHOFStrict() {
   const basis = hofBasis === 'total' ? 'total' : 'bp';
   const { data, error } = await supabase.rpc('rank_list_public', {
     p_season: null, p_basis: basis, p_class_code: null, p_page: 1, p_page_size: 5
   });
-  if (error) { console.warn('rank_list_public', error.message); return []; }
+  if (error) { console.warn('rank_list_public:', error.message); return []; }
   return data || [];
 }
 
+// ⬇️ 랭킹이 비었을 때 내 기록으로 Top1 강제 구성
+async function loadHOFWithFallback() {
+  let list = await loadHOFStrict();
+  if (Array.isArray(list) && list.length > 0) return list;
+
+  const me = await loadMyRank();
+  if (me) {
+    // rank_list_public이 비어도, 최소한 내 카드 1장은 보장
+    return [{
+      user_id: me.user_id,
+      nickname: me.nickname,
+      class_code: me.class_code,
+      level: me.level,
+      battle_power: me.battle_power,
+      total_score: null
+    }];
+  }
+  return [];
+}
+
+/* ---------- 세션 건강 ---------- */
 async function ensureHealthySession() {
   const { data: s } = await supabase.auth.getSession();
   if (!s?.session) return false;
   const { data: u } = await supabase.auth.getUser();
   if (!u?.user) { await supabase.auth.signOut(); clearSessionHard(); return false; }
-  // profiles 접근 중 JWT 문제 시 복구
   const test = await supabase.from('profiles').select('user_id').limit(1);
   if (test.error && /JWT|auth/i.test(test.error.message)) {
     await supabase.auth.signOut(); clearSessionHard(); return false;
@@ -150,31 +177,53 @@ async function ensureHealthySession() {
   return true;
 }
 
+/* ---------- UI 리프레시 ---------- */
+async function refreshUI(){
+  try{
+    const healthy = await ensureHealthySession();
+    const { user, isAdmin } = await loadMe();
+    renderHeader(user, isAdmin);
+
+    if (user && healthy) {
+      videoWrap.style.display = 'none';
+      statsWrap.style.display = 'block';
+      const myRank = await loadMyRank();
+      renderStatsCard(myRank);
+    } else {
+      videoWrap.style.display = 'block';
+      statsWrap.style.display = 'none';
+    }
+
+    const hof = await loadHOFWithFallback();
+    renderHOF(hof);
+  } catch(e){
+    console.error('[refreshUI]', e);
+    renderHOF([]); // 최소 1+4 플레이스홀더 보장
+  }
+}
+
 /* ---------- 액션 ---------- */
 async function doLogin(ev){
   ev?.preventDefault?.();
   const email = emailInp?.value?.trim(); const password = passInp?.value || '';
   if (!email || !password) return toast('이메일/비밀번호를 입력하세요.');
-
-  loginBtn.disabled = true; loginBtn.dataset.prev = loginBtn.textContent; loginBtn.textContent='로그인 중...';
-
-  // 오탐 방지를 위해 try/catch 미사용. 오류가 있을 때만 error로 처리.
+  loginBtn.disabled = true; const pv = loginBtn.textContent; loginBtn.textContent='로그인 중...';
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    loginBtn.disabled=false; loginBtn.textContent=loginBtn.dataset.prev || '로그인';
-    return toast(error.message || '로그인 실패');
-  }
+  if (error) { loginBtn.disabled=false; loginBtn.textContent=pv; return toast(error.message || '로그인 실패'); }
   await supabase.rpc('ensure_profile').catch(()=>{});
-  sessionStorage.setItem('tw_just_signed_in','1');
-  location.reload(); // 전환 확정
+  await refreshUI(); // SPA 즉시 갱신
+  const { data:{ user } } = await supabase.auth.getUser();
+  if (!user) location.reload(); else { toast('로그인 성공'); loginBtn.disabled=false; loginBtn.textContent=pv; }
 }
 
 async function doLogout(){
   logoutBtn.disabled = true; const pv = logoutBtn.textContent; logoutBtn.textContent='로그아웃 중...';
   await supabase.auth.signOut().catch(()=>{});
   clearSessionHard();
-  sessionStorage.setItem('tw_just_signed_out','1');
-  location.reload();
+  await refreshUI();
+  const { data:{ user } } = await supabase.auth.getUser();
+  if (user) location.reload(); else toast('로그아웃 완료');
+  logoutBtn.disabled=false; logoutBtn.textContent=pv;
 }
 
 async function doSaveStats(ev){
@@ -197,9 +246,19 @@ async function doSaveStats(ev){
 
   const { error } = await supabase.rpc('self_upsert_stats', payload);
   if (error) { saveNote.textContent = '실패: '+(error.message||'오류'); btn.disabled=false; btn.textContent=pv; return; }
-  saveNote.textContent = '저장 완료';
 
-  const myRank = await loadMyRank(); renderStatsCard(myRank);
+  // 생성컬럼/뷰 반영 타이밍 보정
+  await sleep(150);
+
+  // 내 배지 즉시 갱신
+  const myRank = await loadMyRank();
+  renderStatsCard(myRank);
+
+  // HOF 즉시 재조회(Top1 fallback 포함)
+  const hof = await loadHOFWithFallback();
+  renderHOF(hof);
+
+  saveNote.textContent = '저장 완료';
   btn.disabled=false; btn.textContent=pv;
 }
 
@@ -210,7 +269,6 @@ async function doSignup(ev){
   ev?.preventDefault?.();
   if (suPw.value !== suPw2.value) { toast('비밀번호 확인이 일치하지 않습니다.'); return; }
   const submit = $('#signupDo'); submit.disabled=true; const pv=submit.textContent; submit.textContent='요청 중...';
-
   const { error } = await supabase.auth.signUp({ email: suEmail.value.trim(), password: suPw.value });
   if (error) { submit.disabled=false; submit.textContent=pv; return toast(error.message||'가입 실패'); }
   await supabase.rpc('ensure_profile').catch(()=>{});
@@ -224,35 +282,6 @@ async function doSignup(ev){
   submit.disabled=false; submit.textContent=pv; closeSignup();
 }
 
-/* ---------- UI 리프레시 ---------- */
-async function refreshUI(){
-  try{
-    if (sessionStorage.getItem('tw_just_signed_in'))  { sessionStorage.removeItem('tw_just_signed_in');  toast('로그인 성공'); }
-    if (sessionStorage.getItem('tw_just_signed_out')) { sessionStorage.removeItem('tw_just_signed_out'); toast('로그아웃 완료'); }
-
-    const healthy = await ensureHealthySession();
-    const { user, isAdmin } = await loadMe();
-    renderHeader(user, isAdmin);
-
-    if (user && healthy) {
-      videoWrap.style.display = 'none';
-      statsWrap.style.display = 'block';
-      const myRank = await loadMyRank();
-      renderStatsCard(myRank);
-    } else {
-      videoWrap.style.display = 'block';
-      statsWrap.style.display = 'none';
-    }
-
-    const hof = await loadHOF();
-    renderHOF(hof);
-  } catch(e){
-    console.error('[refreshUI]', e);
-    const hof = await loadHOF().catch(()=>[]);
-    renderHOF(hof);
-  }
-}
-
 /* 이벤트 */
 document.addEventListener('DOMContentLoaded', refreshUI);
 document.querySelector('#authForm')?.addEventListener('submit', doLogin);
@@ -260,12 +289,16 @@ passInp?.addEventListener('keydown', (e)=>{ if (e.key==='Enter') doLogin(e); });
 loginBtn?.addEventListener('click', doLogin);
 logoutBtn?.addEventListener('click', doLogout);
 statsForm?.addEventListener('submit', doSaveStats);
-tabBp?.addEventListener('click', ()=>{ hofBasis='bp';   tabBp.classList.add('on'); tabTotal.classList.remove('on');  loadHOF().then(renderHOF); });
-tabTotal?.addEventListener('click', ()=>{ hofBasis='total';tabTotal.classList.add('on'); tabBp.classList.remove('on');    loadHOF().then(renderHOF); });
+tabBp?.addEventListener('click', ()=>{ hofBasis='bp';   tabBp.classList.add('on'); tabTotal.classList.remove('on');  loadHOFWithFallback().then(renderHOF); });
+tabTotal?.addEventListener('click', ()=>{ hofBasis='total';tabTotal.classList.add('on'); tabBp.classList.remove('on');    loadHOFWithFallback().then(renderHOF); });
 
 signupOpen?.addEventListener('click', openSignup);
 signupClose?.addEventListener('click', closeSignup);
 signupForm?.addEventListener('submit', doSignup);
 
-supabase.auth.onAuthStateChange((ev)=>{ if (ev==='TOKEN_REFRESHED') refreshUI(); });
-console.info('[TW] app ready (fix-auth-hof-2)');
+/* 세션 이벤트에도 즉시 리프레시 */
+supabase.auth.onAuthStateChange((ev)=>{ 
+  if (ev==='SIGNED_IN' || ev==='SIGNED_OUT' || ev==='TOKEN_REFRESHED') refreshUI();
+});
+
+console.info('[TW] app ready (myrank filter + HOF fallback)');
