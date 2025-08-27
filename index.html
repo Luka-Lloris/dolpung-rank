@@ -8,11 +8,6 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
-  <!-- 카카오 안내줄 -->
-  <div class="kakao-banner">
-    Kakao 로그인 기능은 준비 중에 있습니다
-  </div>
-
   <!-- 헤더 -->
   <header class="page-header">
     <div class="brand">
@@ -30,6 +25,7 @@
         <input id="password" type="password" placeholder="비밀번호" />
         <button id="loginBtn" class="btn">로그인</button>
         <button id="firstJoinBtn" class="btn ghost">최초가입</button>
+        <button id="kakaoBtn" class="btn kakao">카카오 로그인 (준비중)</button>
       </div>
 
       <!-- 로그인 -->
@@ -147,7 +143,7 @@
     </div>
   </dialog>
 
-  <!-- Supabase 환경값: 여기 두 값만 네 프로젝트 값으로 바꾸면 됨 -->
+  <!-- Supabase 환경값 -->
   <script>
     window.__SB_URL__  = "https://zxmihqapcemjmzoagpjm.supabase.co";
     window.__SB_ANON__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4bWlocWFwY2Vtam16b2FncGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxOTE5MDEsImV4cCI6MjA3MTc2NzkwMX0.byvaKSk5JovNr5WmXFXCp9LKqAhEDub642thN5j9fwA";
@@ -155,4 +151,3 @@
   <script src="app.js"></script>
 </body>
 </html>
- 
